@@ -1,0 +1,46 @@
+# Python Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+.vercel/
+
+# Sensitive Environment Configurations (use .env.example instead)
+.env
+.env.local
+.env.*.local
+frontend/.env.local
+frontend/.env*.local
+backend/.env
+
+# Uploads and temporary media
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/uploads/reports/*
+!backend/uploads/reports/.gitkeep
+backend/uploads/evidence/*
+!backend/uploads/evidence/.gitkeep
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+*.log
+
+# Git LFS / Keep model weights
+!waste2worth_resnet18.pth
+!class_names.json

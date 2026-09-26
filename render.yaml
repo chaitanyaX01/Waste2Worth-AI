@@ -1,0 +1,47 @@
+services:
+  # Backend API with PyTorch ResNet-18
+  - type: web
+    name: waste2worth-backend
+    env: python
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: waste2worth-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MODEL_PATH
+        value: waste2worth_resnet18.pth
+      - key: CLASS_NAMES_PATH
+        value: class_names.json
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      - key: CORS_ORIGINS
+        value: '["*"]'
+
+  # Frontend Next.js Web App
+  - type: web
+    name: waste2worth-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.12.0
+      - key: BACKEND_INTERNAL_URL
+        fromService:
+          type: web
+          name: waste2worth-backend
+          property: host
+
+databases:
+  - name: waste2worth-db
+    databaseName: waste2worth
+    user: postgres
+    plan: free

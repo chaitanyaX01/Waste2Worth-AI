@@ -1,0 +1,7 @@
+cardboard: 0.9899
+e-waste: 0.9911
+glass: 0.9883
+medical: 0.9862
+metal: 0.9854
+paper: 0.9906
+plastic: 0.9809
