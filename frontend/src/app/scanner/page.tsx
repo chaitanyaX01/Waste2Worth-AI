@@ -11,7 +11,8 @@ import {
   Info,
   Smartphone,
   Image as ImageIcon,
-  CheckCircle2
+  CheckCircle2,
+  RotateCw,
 } from "lucide-react";
 import { predictWaste } from "@/lib/api";
 import { PredictionResult } from "@/lib/types";
@@ -22,23 +23,39 @@ export default function ScannerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [cameraNote, setCameraNote] = useState<string | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
+  // Initialize camera on mount
   useEffect(() => {
-    startCamera();
+    startCamera("environment");
     return () => {
       stopCamera();
     };
   }, []);
 
-  const startCamera = async () => {
+  // Ensure video element always receives the active stream
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+      }
+      videoRef.current.play().catch((e) => {
+        console.warn("Video auto-play notice:", e);
+      });
+    }
+  }, [stream, cameraActive]);
+
+  const startCamera = async (mode: "environment" | "user" = "environment") => {
     setCameraNote(null);
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraNote("Direct camera capture ready. Tap to take waste photo.");
@@ -47,41 +64,71 @@ export default function ScannerPage() {
     }
 
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-        audio: false,
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+      // Stop any existing stream tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
+
+      let mediaStream: MediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: mode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      } catch (err) {
+        // Fallback for laptop / desktop webcams that don't support facingMode constraint
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
+
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       setCameraActive(true);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(() => {});
+        };
+        try {
+          await videoRef.current.play();
+        } catch (_) {}
+      }
     } catch (err: any) {
-      console.warn("Live stream unavailable, using native camera capture:", err);
-      setCameraNote("Direct camera capture ready. Tap to take waste photo.");
+      console.warn("Live camera stream unavailable, direct capture ready:", err);
+      setCameraNote("Tap the card below to take photo with your phone camera.");
       setCameraActive(false);
     }
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setStream(null);
     setCameraActive(false);
   };
 
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const handleToggleCamera = () => {
+    const nextMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(nextMode);
+    startCamera(nextMode);
+  };
 
   // Helper: crop an image File/Blob to the exact center square box (1:1 aspect ratio)
-  // Max 800x800 for mobile memory safety & instant ResNet-18 processing
   const cropSquareBlob = (file: File | Blob): Promise<Blob> => {
     return new Promise((resolve) => {
-      // 1.5s fallback timeout: if canvas or image decoding hangs on mobile, resolve file directly
       const timer = setTimeout(() => {
         console.warn("Square crop operation timed out; falling back to original file");
         resolve(file);
@@ -99,7 +146,6 @@ export default function ScannerPage() {
         try {
           const canvas = document.createElement("canvas");
           const naturalDim = Math.min(img.naturalWidth || 800, img.naturalHeight || 800);
-          // Limit to max 800x800 for mobile memory safety (ResNet-18 only requires 224x224)
           const targetSize = Math.min(naturalDim, 800);
           canvas.width = targetSize;
           canvas.height = targetSize;
@@ -131,7 +177,7 @@ export default function ScannerPage() {
     });
   };
 
-  // Live video crop inside square target box (for desktop or HTTPS)
+  // Live video crop inside square target box
   const captureFromLiveVideo = () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
@@ -139,6 +185,11 @@ export default function ScannerPage() {
     const box = boxRef.current;
     const context = canvas.getContext("2d");
     if (!context) return;
+
+    if (!video.videoWidth || !video.videoHeight) {
+      console.warn("Video stream dimensions not ready yet");
+      return;
+    }
 
     if (box) {
       const videoRect = video.getBoundingClientRect();
@@ -158,8 +209,14 @@ export default function ScannerPage() {
 
       context.drawImage(
         video,
-        cropX, cropY, cropWidth, cropHeight,
-        0, 0, targetDim, targetDim
+        cropX,
+        cropY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        targetDim,
+        targetDim
       );
     } else {
       const minDim = Math.min(video.videoWidth || 640, video.videoHeight || 480);
@@ -196,7 +253,6 @@ export default function ScannerPage() {
     const file = e.target.files?.[0];
     if (file) {
       setAnalysisError(null);
-      setIsAnalyzing(true);
 
       // Start location extraction (EXIF GPS from camera photo + fallback) concurrently
       resolveBestLocation(file)
@@ -211,6 +267,10 @@ export default function ScannerPage() {
         .catch(() => {});
 
       try {
+        // Show raw preview immediately so user sees what was snapped
+        const initialUrl = URL.createObjectURL(file);
+        setPreviewUrl(initialUrl);
+
         // Crop to center square box before analyzing
         const croppedSquare = await cropSquareBlob(file);
         setCapturedBlob(croppedSquare);
@@ -221,7 +281,6 @@ export default function ScannerPage() {
         setAnalysisError(err.message || "Failed to process photo");
         setIsAnalyzing(false);
       }
-      // Reset input value so taking another photo triggers onChange again
       e.target.value = "";
     }
   };
@@ -246,9 +305,7 @@ export default function ScannerPage() {
     setPreviewUrl(null);
     setResult(null);
     setAnalysisError(null);
-    if (!cameraActive) {
-      startCamera();
-    }
+    startCamera(facingMode);
   };
 
   const handleConfirmAndReport = (overrideCategory?: string) => {
@@ -298,7 +355,7 @@ export default function ScannerPage() {
 
           {/* Camera Button with Embedded Direct Native Camera Input */}
           <label className="cursor-pointer text-xs sm:text-sm text-emerald-400 hover:text-emerald-300 transition-all flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 active:scale-[0.97] relative overflow-hidden">
-            <Camera className="w-3.5 h-3.5" />
+            <Smartphone className="w-3.5 h-3.5" />
             <span>Camera</span>
             <input
               type="file"
@@ -325,23 +382,28 @@ export default function ScannerPage() {
           </div>
         )}
 
-        {!result && !isAnalyzing ? (
+        {!result ? (
           /* Camera Viewfinder State */
           <div className="w-full flex flex-col items-center animate-fade-in">
             {/* Viewfinder Area */}
             <div className="relative w-full aspect-[4/5] sm:aspect-square max-w-[520px] rounded-3xl overflow-hidden bg-[#0c0c0e] border border-white/[0.08] shadow-2xl flex items-center justify-center">
-              {/* Live Video (Desktop webcam or HTTPS) */}
-              {cameraActive && !previewUrl && (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover transform -scale-x-100"
-                />
-              )}
+              {/* Live Video Element - Always Mounted to Guarantee Stream Display */}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                onLoadedMetadata={() => {
+                  videoRef.current?.play().catch(() => {});
+                }}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  cameraActive && !previewUrl
+                    ? "opacity-100"
+                    : "opacity-0 absolute pointer-events-none"
+                } ${facingMode === "user" ? "transform -scale-x-100" : ""}`}
+              />
 
-              {/* Direct Touch Viewfinder Overlay — Tapping Anywhere Directly Opens the Phone Camera */}
+              {/* Direct Touch Viewfinder Overlay if Live Stream is Inactive */}
               {!cameraActive && !previewUrl && (
                 <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-6 bg-gradient-to-b from-[#121216] to-[#08080a] group relative select-none">
                   <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-4 group-hover:scale-105 group-hover:bg-emerald-500/20 transition-all duration-300">
@@ -368,35 +430,63 @@ export default function ScannerPage() {
                 </label>
               )}
 
-              {/* Preview if already captured */}
+              {/* Captured Image Preview with Scanning Animation if Analyzing */}
               {previewUrl && (
-                <img
-                  src={previewUrl}
-                  alt="Captured waste"
-                  className="w-full h-full object-cover"
-                />
+                <div className="relative w-full h-full">
+                  <img
+                    src={previewUrl}
+                    alt="Captured waste"
+                    className="w-full h-full object-cover animate-fade-in"
+                  />
+                  {isAnalyzing && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center animate-fade-in">
+                      <div className="relative w-20 h-20 flex items-center justify-center mb-4">
+                        <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />
+                        <div className="w-12 h-12 rounded-full border-2 border-emerald-400/80 border-t-transparent animate-spin" />
+                        <Sparkles className="w-5 h-5 text-emerald-400 absolute" />
+                      </div>
+                      <span className="text-sm font-semibold text-white tracking-wide">
+                        Analyzing waste...
+                      </span>
+                      <span className="text-xs text-white/70 mt-1">
+                        Evaluating ResNet-18 neural model
+                      </span>
+                    </div>
+                  )}
+                </div>
               )}
 
-              {/* Centered Apple Scanning Frame (Photo taken inside this box) */}
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-                <div
-                  ref={boxRef}
-                  className="w-64 h-64 sm:w-76 sm:h-76 relative rounded-2xl border border-white/20 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] transition-all duration-300"
-                >
-                  {/* Subtle Elegant Corners */}
-                  <div className="absolute -top-[2px] -left-[2px] w-6 h-6 border-t-2 border-l-2 border-emerald-400 rounded-tl-lg animate-corner-pulse" />
-                  <div className="absolute -top-[2px] -right-[2px] w-6 h-6 border-t-2 border-r-2 border-emerald-400 rounded-tr-lg animate-corner-pulse" />
-                  <div className="absolute -bottom-[2px] -left-[2px] w-6 h-6 border-b-2 border-l-2 border-emerald-400 rounded-bl-lg animate-corner-pulse" />
-                  <div className="absolute -bottom-[2px] -right-[2px] w-6 h-6 border-b-2 border-r-2 border-emerald-400 rounded-br-lg animate-corner-pulse" />
-
-                  {/* Subtle Scanning Line */}
-                  <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-scan-line" />
+              {/* Apple Scanning Target Box */}
+              {!previewUrl && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+                  <div
+                    ref={boxRef}
+                    className="w-64 h-64 sm:w-76 sm:h-76 relative rounded-2xl border border-white/20 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] transition-all duration-300"
+                  >
+                    <div className="absolute -top-[2px] -left-[2px] w-6 h-6 border-t-2 border-l-2 border-emerald-400 rounded-tl-lg animate-corner-pulse" />
+                    <div className="absolute -top-[2px] -right-[2px] w-6 h-6 border-t-2 border-r-2 border-emerald-400 rounded-tr-lg animate-corner-pulse" />
+                    <div className="absolute -bottom-[2px] -left-[2px] w-6 h-6 border-b-2 border-l-2 border-emerald-400 rounded-bl-lg animate-corner-pulse" />
+                    <div className="absolute -bottom-[2px] -right-[2px] w-6 h-6 border-b-2 border-r-2 border-emerald-400 rounded-br-lg animate-corner-pulse" />
+                    <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-scan-line" />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Flip Camera Button when Live Feed is Active */}
+              {cameraActive && !previewUrl && (
+                <button
+                  type="button"
+                  onClick={handleToggleCamera}
+                  className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white transition-all active:scale-90"
+                  title="Flip Camera (Front / Rear)"
+                >
+                  <RotateCw className="w-4 h-4 text-emerald-400" />
+                </button>
+              )}
 
               {/* Helper Caption */}
               <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full bg-black/75 backdrop-blur-xl border border-white/[0.1] text-xs sm:text-sm text-[#f5f5f7] tracking-tight whitespace-nowrap shadow-lg z-20 pointer-events-none">
-                Photo is captured inside the frame
+                {previewUrl ? "Photo Captured" : "Position waste item inside frame"}
               </div>
             </div>
 
@@ -404,16 +494,17 @@ export default function ScannerPage() {
 
             {/* Apple Camera Shutter Control */}
             <div className="mt-8 flex flex-col items-center gap-3">
-              {cameraActive ? (
-                /* Active Live Webcam Shutter */
+              {cameraActive && !previewUrl ? (
+                /* Active Live Camera Shutter */
                 <button
                   onClick={captureFromLiveVideo}
+                  disabled={isAnalyzing}
                   className="apple-shutter-outer group"
                   aria-label="Capture waste photo"
                 >
                   <div className="apple-shutter-inner group-active:scale-90 transition-transform" />
                 </button>
-              ) : (
+              ) : !previewUrl ? (
                 /* Native Mobile Camera Shutter (Direct Touch Target) */
                 <label className="apple-shutter-outer group cursor-pointer relative" aria-label="Open Camera">
                   <div className="apple-shutter-inner group-active:scale-90 transition-transform" />
@@ -425,29 +516,15 @@ export default function ScannerPage() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
                   />
                 </label>
-              )}
+              ) : null}
               <span className="text-xs text-[#86868b] tracking-tight">
-                {cameraActive ? "Snap photo inside frame" : "Tap shutter to open camera"}
+                {previewUrl
+                  ? "Evaluating photo..."
+                  : cameraActive
+                  ? "Snap photo inside frame"
+                  : "Tap shutter to open camera"}
               </span>
             </div>
-          </div>
-        ) : isAnalyzing ? (
-          /* Analyzing State — Elegant Apple Intelligence Wave Animation */
-          <div className="w-full max-w-[460px] aspect-[4/5] sm:aspect-square flex flex-col items-center justify-center text-center p-8 animate-fade-in">
-            <div className="relative w-32 h-32 flex items-center justify-center mb-8">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-500/25 via-teal-500/15 to-transparent animate-ping duration-1000" />
-              <div className="absolute w-24 h-24 rounded-full border border-emerald-400/40 animate-spin duration-700" />
-              <div className="w-14 h-14 rounded-full bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] flex items-center justify-center animate-breathe">
-                <Sparkles className="w-6 h-6 text-emerald-400" />
-              </div>
-            </div>
-
-            <h3 className="text-3xl font-semibold tracking-tight text-white mb-2">
-              Analyzing waste...
-            </h3>
-            <p className="text-sm text-[#86868b]">
-              Evaluating ResNet-18 neural tensors
-            </p>
           </div>
         ) : result ? (
           /* Apple Product Reveal for AI Result */
