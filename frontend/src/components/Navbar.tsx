@@ -1,47 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
   Camera,
-  ChevronDown,
   LogOut,
   User
 } from "lucide-react";
 
 export default function Navbar() {
-  const { user, role, logout, quickLogin, isAuthenticated } = useAuth();
+  const { user, role, logout, isAuthenticated } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [isSwitching, setIsSwitching] = useState(false);
-
-  const handleRoleSwitch = async (newRole: "CITIZEN" | "COLLECTOR" | "ADMIN") => {
-    setRoleDropdownOpen(false);
-    if (role === newRole && isAuthenticated) {
-      if (newRole === "CITIZEN") router.push("/dashboard");
-      else if (newRole === "COLLECTOR") router.push("/collector/dashboard");
-      else if (newRole === "ADMIN") router.push("/admin/dashboard");
-      return;
-    }
-    setIsSwitching(true);
-    try {
-      await quickLogin(newRole);
-      if (newRole === "CITIZEN") router.push("/dashboard");
-      else if (newRole === "COLLECTOR") router.push("/collector/dashboard");
-      else if (newRole === "ADMIN") router.push("/admin/dashboard");
-    } catch (e) {
-      console.warn("Direct role switch fallback:", e);
-      logout();
-      if (newRole === "CITIZEN") router.push("/login");
-      else if (newRole === "COLLECTOR") router.push("/collector/login");
-      else if (newRole === "ADMIN") router.push("/admin/login");
-    } finally {
-      setIsSwitching(false);
-    }
-  };
 
   const getLinks = () => {
     if (role === "ADMIN") {
@@ -144,78 +115,25 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Apple Role Selector Pill */}
-            <div className="relative">
-              <button
-                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                disabled={isSwitching}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-sm text-white transition-colors"
-                aria-label="Switch Role"
-              >
+            {/* Authenticated User Status Badge */}
+            {isAuthenticated && role && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    isSwitching
-                      ? "bg-sky-400 animate-ping"
-                      : role === "ADMIN"
+                    role === "ADMIN"
                       ? "bg-purple-400"
                       : role === "COLLECTOR"
                       ? "bg-amber-400"
                       : "bg-emerald-400"
                   }`}
                 />
-                <span className="text-xs sm:text-sm font-medium tracking-tight">
-                  {isSwitching ? "Switching..." : role ? (role === "ADMIN" ? "Admin" : role === "COLLECTOR" ? "Collector" : "Citizen") : "Citizen"}
+                <span className="font-medium text-white tracking-tight">
+                  {role === "ADMIN" ? "Admin" : role === "COLLECTOR" ? "Collector" : "Citizen"}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-[#86868b]" />
-              </button>
+              </div>
+            )}
 
-              {roleDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-[#121214] border border-white/[0.14] shadow-2xl p-2 z-50 animate-scale-up">
-                  <div className="text-xs text-[#86868b] px-3 py-1.5 font-medium tracking-tight border-b border-white/[0.06] flex items-center justify-between">
-                    <span>Select Portal Role</span>
-                    <span className="text-[10px] text-emerald-400 font-normal">1-Tap Switch</span>
-                  </div>
-                  <button
-                    onClick={() => handleRoleSwitch("CITIZEN")}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-left transition-colors ${
-                      role === "CITIZEN"
-                        ? "bg-white/[0.09] text-white font-medium"
-                        : "text-[#86868b] hover:text-white hover:bg-white/[0.05]"
-                    }`}
-                  >
-                    <span>Citizen Portal</span>
-                    {role === "CITIZEN" && <span className="text-emerald-400 text-xs font-medium">Active</span>}
-                  </button>
-                  <button
-                    onClick={() => handleRoleSwitch("COLLECTOR")}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-left transition-colors ${
-                      role === "COLLECTOR"
-                        ? "bg-white/[0.09] text-white font-medium"
-                        : "text-[#86868b] hover:text-white hover:bg-white/[0.05]"
-                    }`}
-                  >
-                    <span>Waste Collector</span>
-                    {role === "COLLECTOR" && <span className="text-amber-400 text-xs font-medium">Active</span>}
-                  </button>
-                  <button
-                    onClick={() => handleRoleSwitch("ADMIN")}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-left transition-colors ${
-                      role === "ADMIN"
-                        ? "bg-white/[0.09] text-white font-medium"
-                        : "text-[#86868b] hover:text-white hover:bg-white/[0.05]"
-                    }`}
-                  >
-                    <span>Operations Admin</span>
-                    {role === "ADMIN" && <span className="text-purple-400 text-xs font-medium">Active</span>}
-                  </button>
-                  <div className="text-[11px] text-[#86868b] px-3 py-2 border-t border-white/[0.06] mt-1 flex items-center gap-1.5">
-                    <span>⚡ Instant role switch (no credentials re-asked)</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* User Profile / Logout */}
+            {/* User Profile / Logout or Sign In / Register */}
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
                 <Link
@@ -234,12 +152,20 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="px-3 py-1 rounded-full bg-white text-black text-xs font-semibold hover:bg-[#e5e5e7] transition-colors"
-              >
-                Sign In
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="px-3 py-1 rounded-full text-xs font-medium text-[#86868b] hover:text-white hover:bg-white/[0.06] transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-3.5 py-1 rounded-full bg-white text-black text-xs font-semibold hover:bg-[#e5e5e7] transition-all active:scale-[0.97]"
+                >
+                  Register
+                </Link>
+              </div>
             )}
           </div>
         </div>

@@ -24,7 +24,6 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   register: (data: RegisterUserData) => Promise<void>;
   logout: () => void;
-  quickLogin: (role: UserRole) => Promise<void>;
   refreshProfile: () => Promise<void>;
   updatePointsBalance: (points: number) => void;
 }
@@ -171,17 +170,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const quickLogin = async (targetRole: UserRole) => {
-    const credentials = {
-      ADMIN: { email: "admin@waste2worth.org", pass: "admin123" },
-      COLLECTOR: { email: "collector@waste2worth.org", pass: "collector123" },
-      CITIZEN: { email: "citizen@waste2worth.org", pass: "citizen123" },
-    };
-    const cred = credentials[targetRole];
-    if (cred) {
-      await login(cred.email, cred.pass);
-    }
-  };
 
   const refreshProfile = async () => {
     if (!token) return;
@@ -209,7 +197,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
-        quickLogin,
         refreshProfile,
         updatePointsBalance,
       }}

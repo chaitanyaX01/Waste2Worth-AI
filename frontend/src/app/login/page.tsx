@@ -147,16 +147,6 @@ export default function LoginPage() {
             Create account
           </Link>
         </div>
-
-        <div className="mt-6 pt-6 border-t border-white/[0.08] flex items-center justify-center gap-4 text-xs text-[#86868b]">
-          <Link href="/collector/login" className="hover:text-white transition-colors">
-            Collector Portal
-          </Link>
-          <span>•</span>
-          <Link href="/admin/login" className="hover:text-white transition-colors">
-            Admin Access
-          </Link>
-        </div>
       </div>
     </div>
   );

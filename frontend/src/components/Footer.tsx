@@ -29,10 +29,11 @@ export default function Footer() {
             Copyright © 2026 Waste2Worth AI. All rights reserved.
           </div>
           <div className="flex flex-wrap items-center gap-4 text-[#86868b]">
-            <Link href="/dashboard" className="hover:text-white transition-colors">Citizen</Link>
-            <Link href="/collector/dashboard" className="hover:text-white transition-colors">Collector</Link>
-            <Link href="/admin/dashboard" className="hover:text-white transition-colors">Admin</Link>
-            <Link href="/scanner" className="hover:text-white transition-colors">Camera AI</Link>
+            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            <Link href="/dashboard" className="hover:text-white transition-colors">Impact</Link>
+            <Link href="/scanner" className="hover:text-white transition-colors">Scan Waste</Link>
+            <Link href="/report" className="hover:text-white transition-colors">Report Spot</Link>
+            <Link href="/rewards" className="hover:text-white transition-colors">Rewards</Link>
             <Link href="/leaderboard" className="hover:text-white transition-colors">Leaderboard</Link>
           </div>
         </div>

@@ -189,33 +189,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Minimal Role Gateway */}
+      {/* Community Call to Action */}
       <section className="py-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
-        <h3 className="text-3xl font-semibold text-white tracking-tight mb-2">
-          Experience Waste2Worth
+        <h3 className="text-3xl sm:text-4xl font-semibold text-white tracking-tight mb-3">
+          Join the Waste Intelligence Movement
         </h3>
-        <p className="text-sm text-[#86868b] mb-8">
-          Select an interface to test the complete circular system.
+        <p className="text-sm sm:text-base text-[#86868b] mb-8 max-w-md mx-auto">
+          Start scanning waste, report illegal dump spots, and earn eco-rewards for keeping your community clean.
         </p>
 
         <div className="inline-flex flex-wrap items-center justify-center gap-4">
           <Link
-            href="/dashboard"
-            className="px-7 py-3 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white text-sm font-medium border border-white/[0.08] transition-all active:scale-[0.97]"
+            href="/scanner"
+            className="px-8 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-sm transition-all active:scale-[0.97] shadow-lg shadow-emerald-500/20"
           >
-            Citizen Portal
+            Scan Waste Now
           </Link>
           <Link
-            href="/collector/dashboard"
-            className="px-7 py-3 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white text-sm font-medium border border-white/[0.08] transition-all active:scale-[0.97]"
+            href="/register"
+            className="px-8 py-3.5 rounded-full bg-white text-black hover:bg-[#e5e5e7] text-sm font-semibold transition-all active:scale-[0.97]"
           >
-            Collector Field Hub
-          </Link>
-          <Link
-            href="/admin/dashboard"
-            className="px-7 py-3 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white text-sm font-medium border border-white/[0.08] transition-all active:scale-[0.97]"
-          >
-            Municipal Command
+            Create Account
           </Link>
         </div>
       </section>
