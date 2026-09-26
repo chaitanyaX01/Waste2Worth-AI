@@ -19,6 +19,14 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
             detail="An account with this email address already exists."
         )
 
+    # Validate compulsory 10-digit mobile phone number
+    clean_phone = "".join(filter(str.isdigit, user_in.phone or ""))
+    if len(clean_phone) != 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mobile phone number is compulsory and must be exactly 10 digits."
+        )
+
     # Resolve role
     role = db.query(Role).filter(Role.name == user_in.role).first()
     if not role:
@@ -31,7 +39,7 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
         name=user_in.name.strip(),
         email=clean_email,
         password_hash=hash_password(user_in.password),
-        phone=user_in.phone.strip() if user_in.phone else None,
+        phone=clean_phone,
         role_id=role.id,
         points_balance=0,
         is_active=True
@@ -47,7 +55,7 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
             user_id=new_user.id,
             employee_code=employee_code,
             organization=user_in.organization or "Municipal Waste Services",
-            phone=user_in.phone,
+            phone=clean_phone,
             service_area=user_in.service_area or "Central District",
             is_available=True
         )

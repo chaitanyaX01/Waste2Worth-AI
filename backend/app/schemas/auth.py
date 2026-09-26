@@ -8,7 +8,7 @@ class UserRegister(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=6)
-    phone: Optional[str] = None
+    phone: str = Field(..., min_length=10, max_length=15, description="Compulsory 10-digit mobile number")
     role: UserRoleEnum = UserRoleEnum.CITIZEN
     # Collector specific fields
     employee_code: Optional[str] = None

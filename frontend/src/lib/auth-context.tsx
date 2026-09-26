@@ -8,7 +8,7 @@ export interface RegisterUserData {
   name: string;
   email: string;
   password: string;
-  phone?: string;
+  phone: string;
   role?: string;
   employee_code?: string;
   organization?: string;

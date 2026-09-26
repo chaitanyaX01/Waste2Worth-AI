@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Sparkles } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("CITIZEN");
   const [employeeCode, setEmployeeCode] = useState("");
@@ -30,13 +31,21 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Strictly validate 10-digit mobile number
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setError("Mobile phone number is compulsory and must be exactly 10 digits.");
+      return;
+    }
+
     setLoading(true);
     try {
       await register({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password: password.trim(),
-        phone: phone ? phone.trim() : undefined,
+        phone: cleanPhone,
         role,
         employee_code: employeeCode ? employeeCode.trim() : undefined,
       });
@@ -47,15 +56,6 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillQuickDemoCitizen = () => {
-    const randomSuffix = Math.floor(Math.random() * 900 + 100);
-    setName(`Citizen User ${randomSuffix}`);
-    setEmail(`user${randomSuffix}@waste2worth.org`);
-    setPassword("password123");
-    setPhone("+1-555-0123");
-    setRole("CITIZEN");
   };
 
   return (
@@ -71,18 +71,6 @@ export default function RegisterPage() {
           Join the community waste intelligence network
         </p>
 
-        {/* Quick autofill helper for mobile */}
-        <div className="mb-5 flex justify-end">
-          <button
-            type="button"
-            onClick={fillQuickDemoCitizen}
-            className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 active:scale-95 transition-all"
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>Autofill New Account Details</span>
-          </button>
-        </div>
-
         {error && (
           <div className="mb-6 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs text-left">
             {error}
@@ -92,7 +80,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
           <div className="space-y-1">
             <label htmlFor="reg-name" className="text-xs text-[#86868b]">
-              Full Name
+              Full Name <span className="text-rose-400">*</span>
             </label>
             <input
               id="reg-name"
@@ -109,7 +97,7 @@ export default function RegisterPage() {
 
           <div className="space-y-1">
             <label htmlFor="reg-email" className="text-xs text-[#86868b]">
-              Email Address
+              Email Address <span className="text-rose-400">*</span>
             </label>
             <input
               id="reg-email"
@@ -129,39 +117,74 @@ export default function RegisterPage() {
 
           <div className="space-y-1">
             <label htmlFor="reg-password" className="text-xs text-[#86868b]">
-              Password
+              Password <span className="text-rose-400">*</span>
             </label>
-            <input
-              id="reg-password"
-              name="password"
-              type="password"
-              required
-              minLength={6}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 6 characters"
-              className="w-full px-4 py-3 rounded-2xl bg-[#0c0c0e] border border-white/[0.1] text-xs text-white placeholder-[#86868b]/50 focus:outline-none focus:border-white/30"
-            />
+            <div className="relative">
+              <input
+                id="reg-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={6}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="w-full pl-4 pr-11 py-3 rounded-2xl bg-[#0c0c0e] border border-white/[0.1] text-xs text-white placeholder-[#86868b]/50 focus:outline-none focus:border-white/30"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-white transition-colors p-1"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="reg-phone" className="text-xs text-[#86868b]">
-              Phone (Optional)
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="reg-phone" className="text-xs text-[#86868b]">
+                Mobile Phone Number <span className="text-rose-400">*</span>
+              </label>
+              <span
+                className={`text-[11px] font-mono transition-colors ${
+                  phone.length === 10
+                    ? "text-emerald-400 font-semibold"
+                    : "text-[#86868b]"
+                }`}
+              >
+                {phone.length === 10 ? "✓ 10 Digits" : `${phone.length}/10 Digits (Required)`}
+              </span>
+            </div>
             <input
               id="reg-phone"
               name="tel"
               type="tel"
+              inputMode="numeric"
+              pattern="[0-9]{10}"
+              maxLength={10}
+              required
               autoComplete="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1-555-0188"
-              className="w-full px-4 py-3 rounded-2xl bg-[#0c0c0e] border border-white/[0.1] text-xs text-white placeholder-[#86868b]/50 focus:outline-none focus:border-white/30"
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              placeholder="Enter 10-digit mobile number"
+              className={`w-full px-4 py-3 rounded-2xl bg-[#0c0c0e] border text-xs text-white placeholder-[#86868b]/50 focus:outline-none tracking-wider font-mono transition-colors ${
+                phone.length > 0 && phone.length < 10
+                  ? "border-amber-500/50 focus:border-amber-400"
+                  : phone.length === 10
+                  ? "border-emerald-500/50 focus:border-emerald-400"
+                  : "border-white/[0.1] focus:border-white/30"
+              }`}
             />
+            <p className="text-[10px] text-[#86868b]">
+              Compulsory 10-digit mobile number required to complete registration.
+            </p>
           </div>
 
           <div className="space-y-1">
@@ -199,7 +222,7 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || phone.length !== 10}
             className="w-full py-3.5 mt-2 rounded-full bg-white text-black font-semibold text-xs hover:bg-[#e5e5e7] disabled:opacity-50 transition-all active:scale-[0.98]"
           >
             {loading ? "Creating Account..." : "Create Account"}

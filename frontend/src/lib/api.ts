@@ -86,7 +86,7 @@ export async function registerUser(userData: {
   name: string;
   email: string;
   password: string;
-  phone?: string;
+  phone: string;
   role?: string;
   employee_code?: string;
   organization?: string;
@@ -97,7 +97,7 @@ export async function registerUser(userData: {
     name: userData.name.trim(),
     email: userData.email.trim().toLowerCase(),
     password: userData.password.trim(),
-    phone: userData.phone ? userData.phone.trim() : undefined,
+    phone: userData.phone.replace(/\D/g, ""),
   };
   const response = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
     method: "POST",
