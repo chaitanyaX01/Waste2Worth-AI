@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { getTaskDetail, updateTaskStatus, uploadTaskEvidence } from "@/lib/api";
+import { getTaskDetail, updateTaskStatus, uploadTaskEvidence, resolveImageUrl } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
 import {
   ChevronLeft,
@@ -164,11 +164,7 @@ export default function CollectorTaskDetailPage({
             </div>
             <div className="aspect-square rounded-2xl bg-[#0c0c0e] border border-white/[0.1] overflow-hidden">
               <img
-                src={
-                  task.report.image_url?.startsWith("http")
-                    ? task.report.image_url
-                    : `http://127.0.0.1:8000${task.report.image_url}`
-                }
+                src={resolveImageUrl(task.report.image_url)}
                 alt="Before cleanup"
                 className="w-full h-full object-cover"
                 onError={(e: any) => {

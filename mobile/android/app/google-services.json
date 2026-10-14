@@ -1,0 +1,34 @@
+{
+  "project_info": {
+    "project_number": "102938475610",
+    "project_id": "waste2worth-ai",
+    "storage_bucket": "waste2worth-ai.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:102938475610:android:3a5f8b9c0d1e2f3a",
+        "android_client_info": {
+          "package_name": "org.waste2worth.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "102938475610-exampleclientid.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyWaste2WorthDemoFirebaseApiKey_Xyz"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

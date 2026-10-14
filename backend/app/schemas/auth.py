@@ -43,3 +43,12 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class FirebaseVerifyRequest(BaseModel):
+    id_token: str
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    otp_code: Optional[str] = None
+    session_info: Optional[str] = None
+    role: UserRoleEnum = UserRoleEnum.CITIZEN

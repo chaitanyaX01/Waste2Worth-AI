@@ -3,10 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Allow phone access on LAN and public tunnels without dev origin blocking
   allowedDevOrigins: [
-    "*.lhr.life",
     "*.loca.lt",
-    "*.trycloudflare.com",
+    "waste2worth-live.loca.lt",
+    "*.localtunnel.me",
     "*.ngrok-free.app",
+    "*.ngrok.app",
+    "*.ngrok.io",
+    "*.trycloudflare.com",
+    "*.lhr.life",
+    "*.onrender.com",
+    "*.vercel.app",
     "192.168.1.45",
     "localhost",
     "127.0.0.1",

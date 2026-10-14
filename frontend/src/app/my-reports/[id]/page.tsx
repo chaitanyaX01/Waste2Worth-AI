@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { getReportDetail } from "@/lib/api";
+import { getReportDetail, resolveImageUrl } from "@/lib/api";
 import { WasteReport } from "@/lib/types";
 import { ChevronLeft, MapPin, Calendar, Check, Clock } from "lucide-react";
 
@@ -163,7 +163,7 @@ export default function ReportDetailPage({
           </p>
           <div className="rounded-3xl overflow-hidden border border-white/[0.08] max-w-sm">
             <img
-              src={report.image_url.startsWith("http") ? report.image_url : `http://127.0.0.1:8000${report.image_url}`}
+              src={resolveImageUrl(report.image_url)}
               alt="Report proof"
               className="w-full h-auto object-cover"
             />

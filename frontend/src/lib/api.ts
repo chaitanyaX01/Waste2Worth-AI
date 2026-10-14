@@ -363,3 +363,18 @@ export async function getAdminCitizens(): Promise<User[]> {
   if (!response.ok) throw new Error("Failed to fetch citizens");
   return response.json();
 }
+
+export function resolveImageUrl(path?: string | null): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  // In browser, relative URL /uploads/... is proxied by Next.js to backend without mixed-content SSL errors
+  if (typeof window !== "undefined") {
+    return cleanPath;
+  }
+  const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000";
+  return `${backendUrl}${cleanPath}`;
+}
+

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminReports, verifyReport, getAdminCollectors, assignCollectorToReport } from "@/lib/api";
+import { getAdminReports, verifyReport, getAdminCollectors, assignCollectorToReport, resolveImageUrl } from "@/lib/api";
 import { WasteReport, CollectorProfile } from "@/lib/types";
 import {
   Search,
@@ -240,11 +240,7 @@ export default function AdminReportsPage() {
             {selectedReport.image_url && (
               <div className="rounded-2xl overflow-hidden border border-white/[0.08] mb-6 aspect-video bg-black">
                 <img
-                  src={
-                    selectedReport.image_url.startsWith("http")
-                      ? selectedReport.image_url
-                      : `http://127.0.0.1:8000${selectedReport.image_url}`
-                  }
+                  src={resolveImageUrl(selectedReport.image_url)}
                   alt="Waste report evidence"
                   className="w-full h-full object-cover"
                 />

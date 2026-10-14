@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getCollectorTasks, updateTaskStatus } from "@/lib/api";
+import { getCollectorTasks, updateTaskStatus, resolveImageUrl } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
 import { MapPin, Navigation, ArrowRight, Check, ChevronRight } from "lucide-react";
 
@@ -88,11 +88,7 @@ export default function CollectorDashboardPage() {
             {/* Waste Image Preview */}
             <div className="relative aspect-[16/10] w-full bg-[#121214] overflow-hidden">
               <img
-                src={
-                  activeTask.report.image_url?.startsWith("http")
-                    ? activeTask.report.image_url
-                    : `http://127.0.0.1:8000${activeTask.report.image_url}`
-                }
+                src={resolveImageUrl(activeTask.report.image_url)}
                 alt="Waste spot"
                 className="w-full h-full object-cover"
                 onError={(e: any) => {

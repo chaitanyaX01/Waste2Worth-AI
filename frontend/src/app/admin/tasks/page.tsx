@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getCollectorTasks, verifyTaskCompletion } from "@/lib/api";
+import { getCollectorTasks, verifyTaskCompletion, resolveImageUrl } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
 import { Check, MapPin, ChevronLeft } from "lucide-react";
 
@@ -123,11 +123,7 @@ export default function AdminTasksPage() {
                     </span>
                     <div className="aspect-[4/3] rounded-2xl bg-[#121214] border border-white/[0.08] overflow-hidden">
                       <img
-                        src={
-                          task.report.image_url?.startsWith("http")
-                            ? task.report.image_url
-                            : `http://127.0.0.1:8000${task.report.image_url}`
-                        }
+                        src={resolveImageUrl(task.report.image_url)}
                         alt="Before cleanup"
                         className="w-full h-full object-cover"
                       />
@@ -141,11 +137,7 @@ export default function AdminTasksPage() {
                     <div className="aspect-[4/3] rounded-2xl bg-[#121214] border border-white/[0.08] overflow-hidden flex items-center justify-center">
                       {afterEvidence?.image_url ? (
                         <img
-                          src={
-                            afterEvidence.image_url.startsWith("http")
-                              ? afterEvidence.image_url
-                              : `http://127.0.0.1:8000${afterEvidence.image_url}`
-                          }
+                          src={resolveImageUrl(afterEvidence.image_url)}
                           alt="After cleanup proof"
                           className="w-full h-full object-cover"
                         />

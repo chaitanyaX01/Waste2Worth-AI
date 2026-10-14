@@ -9,7 +9,8 @@ import {
   getAdminDashboardStats,
   getAdminCollectors,
   verifyReport,
-  assignCollectorToReport
+  assignCollectorToReport,
+  resolveImageUrl
 } from "@/lib/api";
 import { WasteReport, DashboardStats, CollectorProfile } from "@/lib/types";
 import {
@@ -276,11 +277,7 @@ export default function AdminMapPage() {
             {selectedReport.image_url && (
               <div className="h-28 rounded-2xl overflow-hidden border border-white/[0.08] bg-[#121214]">
                 <img
-                  src={
-                    selectedReport.image_url.startsWith("http")
-                      ? selectedReport.image_url
-                      : `http://127.0.0.1:8000${selectedReport.image_url}`
-                  }
+                  src={resolveImageUrl(selectedReport.image_url)}
                   alt="Waste proof"
                   className="w-full h-full object-cover"
                 />
