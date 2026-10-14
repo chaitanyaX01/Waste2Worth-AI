@@ -48,11 +48,21 @@ class AIService:
             device = torch.device("cpu")
         return device
 
+    def _resolve_file_path(self, configured_path: str, default_filename: str) -> Path:
+        candidates = [
+            Path(configured_path),
+            Path(__file__).resolve().parent.parent.parent.parent / default_filename,
+            Path(__file__).resolve().parent.parent.parent / default_filename,
+            Path.cwd() / default_filename,
+            Path.cwd() / configured_path,
+        ]
+        for candidate in candidates:
+            if candidate.exists() and candidate.is_file():
+                return candidate
+        raise FileNotFoundError(f"File '{default_filename}' not found. Checked: {[str(c) for c in candidates]}")
+
     def _load_class_names(self) -> List[str]:
-        path = Path(settings.CLASS_NAMES_PATH)
-        if not path.exists():
-            raise FileNotFoundError(f"Class names file not found at: {path}")
-        
+        path = self._resolve_file_path(settings.CLASS_NAMES_PATH, "class_names.json")
         with open(path, "r", encoding="utf-8") as f:
             class_data = json.load(f)
         
@@ -60,9 +70,7 @@ class AIService:
         return class_names
 
     def _load_model(self) -> torch.nn.Module:
-        path = Path(settings.MODEL_PATH)
-        if not path.exists():
-            raise FileNotFoundError(f"Model checkpoint not found at: {path}")
+        path = self._resolve_file_path(settings.MODEL_PATH, "waste2worth_resnet18.pth")
 
         model = models.resnet18(weights=None)
         model.fc = torch.nn.Linear(model.fc.in_features, len(self.class_names))
