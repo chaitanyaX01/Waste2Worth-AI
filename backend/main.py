@@ -23,8 +23,8 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
     except Exception as e:
         print(f"Database initialization warning: {e}")
-    # Verify AI model is loaded
-    print(f"Waste2Worth AI Model loaded on device: {ai_service.device}")
+    # Startup complete
+    print("Waste2Worth AI Platform API initialized (ready for requests).")
     yield
 
 app = FastAPI(

@@ -25,19 +25,57 @@ class AIService:
         if cls._instance is None:
             cls._instance = super(AIService, cls).__new__(cls)
             cls._instance._initialized = False
+            cls._instance._device = None
+            cls._instance._model = None
+            cls._instance._class_names = None
+            cls._instance._transform = None
         return cls._instance
 
     def __init__(self):
         if self._initialized:
             return
-        
-        self.device = self._get_device()
-        self.class_names: List[str] = self._load_class_names()
-        self.model = self._load_model()
-        self.transform = self._get_transforms()
         self.model_version = "ResNet18-Waste2Worth-v1.0"
         self._initialized = True
-        logger.info(f"AIService initialized successfully on device: {self.device}")
+        logger.info("AIService configured (lazy loading enabled to conserve memory).")
+
+    @property
+    def device(self) -> torch.device:
+        if self._device is None:
+            self._device = self._get_device()
+        return self._device
+
+    @property
+    def class_names(self) -> List[str]:
+        self.ensure_loaded()
+        return self._class_names or []
+
+    @property
+    def model(self) -> torch.nn.Module:
+        self.ensure_loaded()
+        return self._model
+
+    @property
+    def transform(self) -> transforms.Compose:
+        self.ensure_loaded()
+        return self._transform
+
+    def ensure_loaded(self):
+        """Loads model into RAM only when first needed, enforcing strict memory limits."""
+        if self._model is not None:
+            return
+
+        logger.info("Loading Waste2Worth AI ResNet-18 model into memory...")
+        # Enforce 1 thread to eliminate OpenMP multi-thread memory bloat in small RAM containers
+        torch.set_num_threads(1)
+        try:
+            torch.set_num_interop_threads(1)
+        except Exception:
+            pass
+
+        self._class_names = self._load_class_names()
+        self._model = self._load_model()
+        self._transform = self._get_transforms()
+        logger.info(f"Model loaded successfully on {self.device} within minimal RAM footprint.")
 
     def _get_device(self) -> torch.device:
         if torch.backends.mps.is_available():
@@ -70,11 +108,13 @@ class AIService:
         return class_names
 
     def _load_model(self) -> torch.nn.Module:
+        import gc
         path = self._resolve_file_path(settings.MODEL_PATH, "waste2worth_resnet18.pth")
 
         model = models.resnet18(weights=None)
-        model.fc = torch.nn.Linear(model.fc.in_features, len(self.class_names))
+        model.fc = torch.nn.Linear(model.fc.in_features, len(self._class_names or []))
 
+        # Load weights on CPU with strict garbage collection
         checkpoint = torch.load(path, map_location="cpu")
         if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
             model.load_state_dict(checkpoint["model_state_dict"])
@@ -82,6 +122,9 @@ class AIService:
             model.load_state_dict(checkpoint["state_dict"])
         else:
             model.load_state_dict(checkpoint)
+
+        del checkpoint
+        gc.collect()
 
         model.to(self.device)
         model.eval()
