@@ -1,18 +1,29 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { checkBackendHealth } from "@/lib/api";
+import BackendConfigModal from "./BackendConfigModal";
 import {
   Camera,
   LogOut,
-  User
+  User,
+  Activity,
 } from "lucide-react";
 
 export default function Navbar() {
   const { user, role, logout, isAuthenticated } = useAuth();
   const pathname = usePathname();
+  const [configOpen, setConfigOpen] = useState(false);
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkBackendHealth()
+      .then((res) => setBackendOnline(res.ok))
+      .catch(() => setBackendOnline(false));
+  }, [pathname]);
 
   const getLinks = () => {
     if (role === "ADMIN") {
@@ -48,20 +59,46 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-2xl border-b border-white/[0.08] transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
-          {/* Apple Style Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center group-hover:border-emerald-500/50 transition-colors">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform" />
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[13px] font-semibold tracking-tight text-white font-sans">
-                WASTE<span className="text-emerald-400">2</span>WORTH
+          {/* Apple Style Logo with Backend Status Indicator */}
+          <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center group-hover:border-emerald-500/50 transition-colors">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform" />
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[13px] font-semibold tracking-tight text-white font-sans">
+                  WASTE<span className="text-emerald-400">2</span>WORTH
+                </span>
+                <span className="text-[9px] font-mono tracking-widest text-[#86868b] uppercase">
+                  AI
+                </span>
+              </div>
+            </Link>
+
+            {/* Quick Backend Connectivity Indicator / Config Button */}
+            <button
+              onClick={() => setConfigOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-[11px] text-[#86868b] hover:text-white transition-all ml-1.5 active:scale-95"
+              title="Click to view or set live backend server connection URL"
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  backendOnline === true
+                    ? "bg-emerald-400"
+                    : backendOnline === false
+                    ? "bg-rose-400"
+                    : "bg-amber-400 animate-pulse"
+                }`}
+              />
+              <span className="hidden sm:inline">
+                {backendOnline === true
+                  ? "AI Online"
+                  : backendOnline === false
+                  ? "AI Offline"
+                  : "Checking AI..."}
               </span>
-              <span className="text-[9px] font-mono tracking-widest text-[#86868b] uppercase">
-                AI
-              </span>
-            </div>
-          </Link>
+            </button>
+          </div>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1.5">
@@ -170,6 +207,14 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      <BackendConfigModal
+        isOpen={configOpen}
+        onClose={() => {
+          setConfigOpen(false);
+          checkBackendHealth().then((res) => setBackendOnline(res.ok));
+        }}
+      />
     </header>
   );
 }

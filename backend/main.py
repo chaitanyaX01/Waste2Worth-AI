@@ -68,11 +68,13 @@ def root():
     }
 
 @app.get("/health")
+@app.get("/api/health")
 def health():
+    is_loaded = ai_service._model is not None
     return {
         "status": "healthy",
-        "model": "loaded",
-        "device": str(ai_service.device),
+        "model": "loaded" if is_loaded else "ready_on_demand",
+        "device": str(ai_service._device) if ai_service._device else "cpu",
         "model_version": ai_service.model_version
     }
 
@@ -83,9 +85,14 @@ async def predict(file: UploadFile = File(...)):
     """
     try:
         contents = await file.read()
+        if len(contents) > 25 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size exceeds 25MB limit.")
         result = ai_service.predict(contents)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"[PREDICT_ERROR] Failed to classify: {e}", flush=True)
         raise HTTPException(
             status_code=400,
             detail=f"Classification failed: {str(e)}"

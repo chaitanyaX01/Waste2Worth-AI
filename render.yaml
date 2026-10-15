@@ -39,6 +39,11 @@ services:
           type: web
           name: waste2worth-backend
           property: host
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: waste2worth-backend
+          property: host
 
 databases:
   - name: waste2worth-db

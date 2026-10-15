@@ -17,6 +17,7 @@ import {
 import { predictWaste } from "@/lib/api";
 import { PredictionResult } from "@/lib/types";
 import { resolveBestLocation } from "@/lib/location";
+import BackendConfigModal from "@/components/BackendConfigModal";
 
 export default function ScannerPage() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function ScannerPage() {
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [cameraNote, setCameraNote] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [configOpen, setConfigOpen] = useState<boolean>(false);
 
   // Initialize camera on mount
   useEffect(() => {
@@ -371,14 +373,25 @@ export default function ScannerPage() {
       {/* Main Viewfinder Experience */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 flex flex-col items-center justify-center pb-8">
         {analysisError && (
-          <div className="mb-4 p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs sm:text-sm max-w-md w-full flex items-center justify-between gap-3 animate-fade-in">
-            <span>{analysisError}</span>
-            <button
-              onClick={handleReset}
-              className="px-3 py-1 rounded-full bg-rose-500/25 hover:bg-rose-500/40 text-xs font-semibold text-white whitespace-nowrap transition-all active:scale-95"
-            >
-              Try Again
-            </button>
+          <div className="mb-4 p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs sm:text-sm max-w-md w-full space-y-2.5 animate-fade-in">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-medium leading-snug">{analysisError}</span>
+              <button
+                onClick={handleReset}
+                className="px-3 py-1 rounded-full bg-rose-500/25 hover:bg-rose-500/40 text-xs font-semibold text-white whitespace-nowrap transition-all active:scale-95 shrink-0"
+              >
+                Try Again
+              </button>
+            </div>
+            <div className="pt-2 border-t border-rose-500/20 flex items-center justify-between text-[11px] text-white/70">
+              <span>Is backend waking up or URL incorrect?</span>
+              <button
+                onClick={() => setConfigOpen(true)}
+                className="text-emerald-400 hover:underline font-semibold"
+              >
+                Configure Backend URL
+              </button>
+            </div>
           </div>
         )}
 
@@ -585,6 +598,11 @@ export default function ScannerPage() {
           </div>
         ) : null}
       </div>
+
+      <BackendConfigModal
+        isOpen={configOpen}
+        onClose={() => setConfigOpen(false)}
+      />
     </div>
   );
 }

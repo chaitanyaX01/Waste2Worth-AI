@@ -89,27 +89,39 @@ class AIService:
     def _resolve_file_path(self, configured_path: str, default_filename: str) -> Path:
         candidates = [
             Path(configured_path),
-            Path(__file__).resolve().parent.parent.parent.parent / default_filename,
-            Path(__file__).resolve().parent.parent.parent / default_filename,
             Path.cwd() / default_filename,
+            Path.cwd() / "backend" / default_filename,
+            Path(__file__).resolve().parent.parent.parent / default_filename,
+            Path(__file__).resolve().parent.parent.parent.parent / default_filename,
+            Path("/opt/render/project/src") / default_filename,
+            Path("/opt/render/project/src/backend") / default_filename,
             Path.cwd() / configured_path,
         ]
         for candidate in candidates:
-            if candidate.exists() and candidate.is_file():
-                return candidate
+            try:
+                if candidate.exists() and candidate.is_file():
+                    return candidate
+            except Exception:
+                continue
         raise FileNotFoundError(f"File '{default_filename}' not found. Checked: {[str(c) for c in candidates]}")
 
     def _load_class_names(self) -> List[str]:
-        path = self._resolve_file_path(settings.CLASS_NAMES_PATH, "class_names.json")
-        with open(path, "r", encoding="utf-8") as f:
-            class_data = json.load(f)
-        
-        class_names = [class_data[str(i)] for i in range(len(class_data))]
-        return class_names
+        default_classes = ["cardboard", "e-waste", "glass", "medical", "metal", "paper", "plastic"]
+        try:
+            path = self._resolve_file_path(settings.CLASS_NAMES_PATH, "class_names.json")
+            with open(path, "r", encoding="utf-8") as f:
+                class_data = json.load(f)
+            class_names = [class_data[str(i)] for i in range(len(class_data))]
+            print(f"[AI_SERVICE] Loaded {len(class_names)} classes from {path}", flush=True)
+            return class_names
+        except Exception as e:
+            print(f"[AI_SERVICE] Warning: Could not load class_names.json ({e}). Using standard defaults.", flush=True)
+            return default_classes
 
     def _load_model(self) -> torch.nn.Module:
         import gc
         path = self._resolve_file_path(settings.MODEL_PATH, "waste2worth_resnet18.pth")
+        print(f"[AI_SERVICE] Loading ResNet-18 weights from {path}...", flush=True)
 
         model = models.resnet18(weights=None)
         model.fc = torch.nn.Linear(model.fc.in_features, len(self._class_names or []))
@@ -128,6 +140,7 @@ class AIService:
 
         model.to(self.device)
         model.eval()
+        print(f"[AI_SERVICE] Model loaded successfully on {self.device}!", flush=True)
         return model
 
     def _get_transforms(self) -> transforms.Compose:
@@ -152,7 +165,18 @@ class AIService:
                 all_predictions: dict mapping all 7 classes to their probabilities
                 model_version: str
         """
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        import gc
+        if not image_bytes or len(image_bytes) < 10:
+            raise ValueError("Uploaded image file is empty or invalid.")
+
+        try:
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        except Exception as err:
+            raise ValueError(f"Failed to decode image: {err}")
+
+        # Ensure model is ready
+        self.ensure_loaded()
+
         image_tensor = self.transform(image).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
@@ -166,6 +190,11 @@ class AIService:
         all_predictions = {}
         for i, prob in enumerate(probabilities[0]):
             all_predictions[self.class_names[i]] = round(float(prob.item()), 4)
+
+        del image_tensor, outputs, probabilities
+        gc.collect()
+
+        print(f"[AI_SERVICE] Prediction complete: {predicted_class} ({confidence_val:.2%})", flush=True)
 
         return {
             "success": True,

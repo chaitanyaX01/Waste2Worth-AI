@@ -14,10 +14,143 @@ import {
 
 export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
-    // Relative path leverages Next.js rewrites to proxy directly to backend
+    // 1. Check custom user-configured backend URL stored in localStorage
+    const customUrl = localStorage.getItem("w2w_custom_backend_url");
+    if (customUrl && customUrl.trim()) {
+      return customUrl.trim().replace(/\/+$/, "");
+    }
+
+    // 2. Client-accessible environment variable
+    const publicEnv = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_AI_API_URL;
+    if (publicEnv && publicEnv.trim()) {
+      const cleanEnv = publicEnv.trim().replace(/\/+$/, "");
+      const isRemoteHost =
+        !window.location.hostname.includes("localhost") &&
+        !window.location.hostname.includes("127.0.0.1");
+      const isEnvLocalhost = cleanEnv.includes("localhost") || cleanEnv.includes("127.0.0.1");
+      // Only ignore localhost if we are running on a remote hosted platform like Vercel
+      if (!(isRemoteHost && isEnvLocalhost)) {
+        return cleanEnv;
+      }
+    }
+
+    // 3. Fallback to same-origin relative path (Next.js rewrites)
     return "";
   }
-  return process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000";
+
+  // Server-side rendering
+  const serverUrl =
+    process.env.BACKEND_INTERNAL_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_AI_API_URL ||
+    "http://127.0.0.1:8000";
+  return serverUrl.trim().replace(/\/+$/, "");
+}
+
+export function setCustomBackendUrl(url: string): void {
+  if (typeof window === "undefined") return;
+  const clean = url.trim().replace(/\/+$/, "");
+  if (!clean) {
+    localStorage.removeItem("w2w_custom_backend_url");
+  } else {
+    localStorage.setItem("w2w_custom_backend_url", clean);
+  }
+}
+
+export function getCustomBackendUrl(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem("w2w_custom_backend_url") || "";
+}
+
+export async function checkBackendHealth(): Promise<{
+  ok: boolean;
+  status?: string;
+  model?: string;
+  url?: string;
+  error?: string;
+}> {
+  const base = getApiBaseUrl();
+  const endpoints = base ? [`${base}/health`, `${base}/api/health`] : ["/api/health", "/health"];
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, { method: "GET", cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return { ok: true, status: data.status || "online", model: data.model, url: ep };
+      }
+    } catch {
+      // Continue to next endpoint
+    }
+  }
+  return { ok: false, error: "Backend unreachable", url: base || "relative" };
+}
+
+export async function downscaleImageForPrediction(
+  fileOrBlob: File | Blob,
+  maxDimension = 800,
+  quality = 0.85
+): Promise<Blob> {
+  return new Promise((resolve) => {
+    // If it's already a very small image (< 350KB), return as is
+    if (fileOrBlob.size < 350 * 1024) {
+      return resolve(fileOrBlob);
+    }
+
+    const timer = setTimeout(() => {
+      resolve(fileOrBlob);
+    }, 1800);
+
+    const img = new Image();
+    const url = URL.createObjectURL(fileOrBlob);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      clearTimeout(timer);
+      try {
+        let width = img.naturalWidth || 800;
+        let height = img.naturalHeight || 800;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(fileOrBlob);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            resolve(blob || fileOrBlob);
+          },
+          "image/jpeg",
+          quality
+        );
+      } catch {
+        resolve(fileOrBlob);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      clearTimeout(timer);
+      resolve(fileOrBlob);
+    };
+
+    img.src = url;
+  });
 }
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -44,20 +177,51 @@ function getAuthHeader(): Record<string, string> {
 }
 
 export async function predictWaste(imageFile: File | Blob): Promise<PredictionResult> {
+  // Compress image to ~100KB to prevent Vercel 4.5MB payload errors and reduce server memory load
+  const compressed =
+    typeof window !== "undefined"
+      ? await downscaleImageForPrediction(imageFile, 800, 0.85)
+      : imageFile;
+
   const formData = new FormData();
-  formData.append("file", imageFile, "scan.jpg");
+  formData.append("file", compressed, "scan.jpg");
 
-  const response = await fetch(`${getApiBaseUrl()}/predict`, {
-    method: "POST",
-    body: formData,
-  });
+  const base = getApiBaseUrl();
+  const candidates = base
+    ? [`${base}/api/predict`, `${base}/predict`]
+    : ["/api/predict", "/predict"];
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || "AI classification failed");
+  let lastError: Error | null = null;
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+
+      if (response.status === 404) {
+        continue;
+      }
+
+      let errorMsg = "AI classification failed";
+      try {
+        const errJson = await response.json();
+        errorMsg = errJson.detail || errJson.message || errorMsg;
+      } catch {
+        const text = await response.text().catch(() => "");
+        if (text) errorMsg = text;
+      }
+      throw new Error(errorMsg);
+    } catch (err: any) {
+      lastError = err;
+    }
   }
 
-  return response.json();
+  throw lastError || new Error("AI classification failed. Cloud service may still be waking up.");
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResponse> {
@@ -370,7 +534,10 @@ export function resolveImageUrl(path?: string | null): string {
     return path;
   }
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  // In browser, relative URL /uploads/... is proxied by Next.js to backend without mixed-content SSL errors
+  const base = getApiBaseUrl();
+  if (base) {
+    return `${base}${cleanPath}`;
+  }
   if (typeof window !== "undefined") {
     return cleanPath;
   }

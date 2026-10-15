@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { submitWasteReport } from "@/lib/api";
+import { submitWasteReport, predictWaste } from "@/lib/api";
+import { PredictionResult } from "@/lib/types";
 import {
   resolveBestLocation,
   reverseGeocode,
@@ -41,6 +42,9 @@ export default function ReportWastePage() {
   const [otherDescription, setOtherDescription] = useState<string>("");
   const [confidence, setConfidence] = useState<number>(0.94);
   const [probsJson, setProbsJson] = useState<string>("{}");
+  const [isClassifying, setIsClassifying] = useState<boolean>(false);
+  const [aiResult, setAiResult] = useState<PredictionResult | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const [latitude, setLatitude] = useState<number>(18.52043);
   const [longitude, setLongitude] = useState<number>(73.856744);
@@ -137,6 +141,17 @@ export default function ReportWastePage() {
       if (savedConf) setConfidence(parseFloat(savedConf));
       if (savedProbs) setProbsJson(savedProbs);
 
+      if (savedConf) {
+        setAiResult({
+          success: true,
+          prediction: savedCat,
+          confidence: parseFloat(savedConf),
+          confidence_percent: parseFloat(savedConf) * 100,
+          all_predictions: savedProbs ? JSON.parse(savedProbs) : {},
+          model_version: "ResNet18-Waste2Worth-v1.0",
+        });
+      }
+
       fetch(savedImg)
         .then((res) => res.blob())
         .then(async (blob) => {
@@ -154,6 +169,25 @@ export default function ReportWastePage() {
     }
   }, []);
 
+  const runAiClassification = async (file: File | Blob) => {
+    setIsClassifying(true);
+    setAiError(null);
+    try {
+      const res = await predictWaste(file);
+      setAiResult(res);
+      setCategory(res.prediction.toLowerCase());
+      setConfidence(res.confidence);
+      setProbsJson(JSON.stringify(res.all_predictions));
+    } catch (err: any) {
+      console.warn("AI classification notice:", err);
+      setAiError(
+        err.message || "Cloud AI model is waking up. You can select the category manually below."
+      );
+    } finally {
+      setIsClassifying(false);
+    }
+  };
+
   // Handle file upload in Step 1
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -162,7 +196,8 @@ export default function ReportWastePage() {
       setImagePreview(URL.createObjectURL(file));
       setStep(2);
 
-      // Attempt to resolve location directly from uploaded file EXIF GPS
+      // Concurrently run AI classification and GPS resolution
+      runAiClassification(file);
       await handleDetectLocation(file);
     }
   };
@@ -524,9 +559,55 @@ export default function ReportWastePage() {
               Classification
             </h1>
             <p className="text-sm text-[#86868b] mt-1.5">
-              Select or confirm the waste material stream.
+              Select or confirm the waste material stream detected by AI.
             </p>
           </div>
+
+          {/* AI Vision Model Status Banner */}
+          {isClassifying && (
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3 animate-pulse">
+              <Loader2 className="w-5 h-5 text-emerald-400 animate-spin shrink-0" />
+              <div>
+                <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI Model Classifying Waste Photo...
+                </span>
+                <p className="text-[11px] text-[#86868b] mt-0.5">
+                  Running ResNet-18 neural classification across 7 waste streams.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isClassifying && aiResult && (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between animate-fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-semibold text-emerald-300">
+                  AI Confirmed Stream:{" "}
+                  <span className="capitalize text-white font-bold">{aiResult.prediction}</span>
+                </span>
+              </div>
+              <span className="text-[11px] font-mono font-medium text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/20">
+                {(aiResult.confidence * 100).toFixed(1)}% match
+              </span>
+            </div>
+          )}
+
+          {!isClassifying && aiError && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-3 text-xs text-amber-300 animate-fade-in">
+              <span className="leading-snug">{aiError}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (imageFile) runAiClassification(imageFile);
+                }}
+                className="px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-medium shrink-0 transition-all active:scale-95"
+              >
+                Retry AI
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             {categories.map((cat) => (

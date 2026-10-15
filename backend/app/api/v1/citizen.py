@@ -54,6 +54,7 @@ async def submit_waste_report(
 
     # Determine AI classification: use provided or run model directly
     if not predicted_class or confidence is None or not class_probabilities_json:
+        await file.seek(0)
         file_bytes = await file.read()
         ai_result = ai_service.predict(file_bytes)
         pred_class = ai_result["prediction"]

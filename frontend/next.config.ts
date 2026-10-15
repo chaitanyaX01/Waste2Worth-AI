@@ -19,7 +19,18 @@ const nextConfig: NextConfig = {
     "0.0.0.0",
   ],
   async rewrites() {
-    const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000";
+    let rawUrl =
+      process.env.BACKEND_INTERNAL_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_AI_API_URL ||
+      "http://127.0.0.1:8000";
+
+    let backendUrl = rawUrl.trim().replace(/\/+$/, "");
+    if (!backendUrl.startsWith("http://") && !backendUrl.startsWith("https://")) {
+      // Handle Render private networking hostnames or domain names missing protocol
+      backendUrl = backendUrl.includes(":") ? `http://${backendUrl}` : `https://${backendUrl}`;
+    }
+
     return [
       {
         source: "/api/:path*",
