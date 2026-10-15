@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
       process.env.BACKEND_INTERNAL_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
       process.env.NEXT_PUBLIC_AI_API_URL ||
-      "http://127.0.0.1:8000";
+      "https://waste2worth-backend-welr.onrender.com";
 
     let backendUrl = rawUrl.trim().replace(/\/+$/, "");
     if (!backendUrl.startsWith("http://") && !backendUrl.startsWith("https://")) {

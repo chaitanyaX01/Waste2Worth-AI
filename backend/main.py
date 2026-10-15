@@ -21,10 +21,20 @@ async def lifespan(app: FastAPI):
     # Ensure database tables exist
     try:
         Base.metadata.create_all(bind=engine)
+        print("Database schema tables verified.", flush=True)
     except Exception as e:
-        print(f"Database initialization warning: {e}")
+        print(f"Database initialization warning: {e}", flush=True)
+
+    # Automatically seed essential database records (roles, badges, rewards)
+    try:
+        from seed_data import seed_database
+        seed_database()
+        print("Essential seed data verified (roles, badges, rewards catalog).", flush=True)
+    except Exception as e:
+        print(f"Database seeding notice: {e}", flush=True)
+
     # Startup complete
-    print("Waste2Worth AI Platform API initialized (ready for requests).")
+    print("Waste2Worth AI Platform API initialized (ready for requests).", flush=True)
     yield
 
 app = FastAPI(

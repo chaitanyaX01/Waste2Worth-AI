@@ -27,13 +27,25 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
             detail="Mobile phone number is compulsory and must be exactly 10 digits."
         )
 
-    # Resolve role
-    role = db.query(Role).filter(Role.name == user_in.role).first()
+    # Resolve role (supports enum or string and auto-seeds if missing in db)
+    role_enum_val = user_in.role
+    if isinstance(role_enum_val, str):
+        try:
+            role_enum_val = UserRoleEnum(role_enum_val.upper())
+        except ValueError:
+            role_enum_val = UserRoleEnum.CITIZEN
+
+    role = db.query(Role).filter(Role.name == role_enum_val).first()
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Role {user_in.role} is invalid or not seeded."
-        )
+        role_desc = {
+            UserRoleEnum.CITIZEN: "Community citizen reporting waste and earning points",
+            UserRoleEnum.COLLECTOR: "Field worker/sanitation team collecting reported waste",
+            UserRoleEnum.ADMIN: "Municipal administrator managing operations, verification, and analytics"
+        }.get(role_enum_val, "System user role")
+        role = Role(name=role_enum_val, description=role_desc)
+        db.add(role)
+        db.commit()
+        db.refresh(role)
 
     new_user = User(
         name=user_in.name.strip(),
@@ -177,10 +189,22 @@ def firebase_verify(req: FirebaseVerifyRequest, db: Session = Depends(get_db)):
         db.refresh(user)
 
     if not user:
-        # Create new verified user
-        role = db.query(Role).filter(Role.name == req.role).first()
+        # Resolve role with auto-creation fallback
+        role_enum_val = req.role if req.role else UserRoleEnum.CITIZEN
+        if isinstance(role_enum_val, str):
+            try:
+                role_enum_val = UserRoleEnum(role_enum_val.upper())
+            except ValueError:
+                role_enum_val = UserRoleEnum.CITIZEN
+
+        role = db.query(Role).filter(Role.name == role_enum_val).first()
         if not role:
             role = db.query(Role).filter(Role.name == UserRoleEnum.CITIZEN).first()
+        if not role:
+            role = Role(name=UserRoleEnum.CITIZEN, description="Community citizen reporting waste and earning points")
+            db.add(role)
+            db.commit()
+            db.refresh(role)
 
         fallback_name = name or (f"Citizen {clean_digits[-4:]}" if clean_digits else "Eco Citizen")
 

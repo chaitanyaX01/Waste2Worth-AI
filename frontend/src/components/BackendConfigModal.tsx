@@ -123,15 +123,15 @@ export default function BackendConfigModal({ isOpen, onClose }: BackendConfigMod
               type="text"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="e.g. https://waste2worth-backend.onrender.com"
+              placeholder="e.g. https://waste2worth-backend-welr.onrender.com"
               className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/[0.1] text-xs font-mono text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500"
             />
             <p className="text-[11px] text-[#86868b] mt-1.5 leading-relaxed">
-              If hosted on Render, paste your service URL (e.g.{" "}
+              Live Render service URL:{" "}
               <code className="text-emerald-400 font-mono">
-                https://waste2worth-backend.onrender.com
+                https://waste2worth-backend-welr.onrender.com
               </code>
-              ). Leave blank to use local or Vercel proxy.
+              . Leave blank to use default proxy.
             </p>
           </div>
 

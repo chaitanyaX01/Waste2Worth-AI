@@ -34,7 +34,15 @@ export function getApiBaseUrl(): string {
       }
     }
 
-    // 3. Fallback to same-origin relative path (Next.js rewrites)
+    // 3. If running on a remote hosted web platform (e.g. Vercel), default directly to live Render backend
+    const isRemoteHost =
+      !window.location.hostname.includes("localhost") &&
+      !window.location.hostname.includes("127.0.0.1");
+    if (isRemoteHost) {
+      return "https://waste2worth-backend-welr.onrender.com";
+    }
+
+    // 4. Fallback to same-origin relative path (Next.js rewrites in local dev)
     return "";
   }
 
@@ -43,7 +51,7 @@ export function getApiBaseUrl(): string {
     process.env.BACKEND_INTERNAL_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.NEXT_PUBLIC_AI_API_URL ||
-    "http://127.0.0.1:8000";
+    "https://waste2worth-backend-welr.onrender.com";
   return serverUrl.trim().replace(/\/+$/, "");
 }
 

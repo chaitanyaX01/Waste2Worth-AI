@@ -3,14 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConstants {
-  // Default development URLs
-  // 10.0.2.2 points to host localhost in Android Emulator
-  // 127.0.0.1 for iOS Simulator / desktop / web
+  // Default live production backend URL on Render
   static String get defaultBaseUrl {
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
-    }
-    return 'http://127.0.0.1:8000';
+    return 'https://waste2worth-backend-welr.onrender.com';
   }
 
   // Active base URL (persisted in SharedPreferences)
