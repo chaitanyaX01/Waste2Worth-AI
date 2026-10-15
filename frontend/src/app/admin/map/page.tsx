@@ -10,8 +10,10 @@ import {
   getAdminCollectors,
   verifyReport,
   assignCollectorToReport,
-  resolveImageUrl
+  resolveImageUrl,
+  DEFAULT_WASTE_PLACEHOLDER
 } from "@/lib/api";
+
 import { WasteReport, DashboardStats, CollectorProfile } from "@/lib/types";
 import {
   X,
@@ -280,7 +282,11 @@ export default function AdminMapPage() {
                   src={resolveImageUrl(selectedReport.image_url)}
                   alt="Waste proof"
                   className="w-full h-full object-cover"
+                  onError={(e: any) => {
+                    e.currentTarget.src = DEFAULT_WASTE_PLACEHOLDER;
+                  }}
                 />
+
               </div>
             )}
 

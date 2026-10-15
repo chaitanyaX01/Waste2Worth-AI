@@ -151,7 +151,7 @@ async def upload_task_evidence(
     if not task:
         raise HTTPException(status_code=404, detail="Collection task not found.")
 
-    image_url = await storage_service.save_evidence_image(file)
+    image_url = await storage_service.save_evidence_image(file, db=db)
 
     evidence = CollectionEvidence(
         task_id=task.id,

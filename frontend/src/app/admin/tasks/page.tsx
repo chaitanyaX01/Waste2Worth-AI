@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getCollectorTasks, verifyTaskCompletion, resolveImageUrl } from "@/lib/api";
+import { getCollectorTasks, verifyTaskCompletion, resolveImageUrl, DEFAULT_WASTE_PLACEHOLDER } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
 import { Check, MapPin, ChevronLeft } from "lucide-react";
 
@@ -126,6 +126,9 @@ export default function AdminTasksPage() {
                         src={resolveImageUrl(task.report.image_url)}
                         alt="Before cleanup"
                         className="w-full h-full object-cover"
+                        onError={(e: any) => {
+                          e.currentTarget.src = DEFAULT_WASTE_PLACEHOLDER;
+                        }}
                       />
                     </div>
                   </div>
@@ -140,8 +143,12 @@ export default function AdminTasksPage() {
                           src={resolveImageUrl(afterEvidence.image_url)}
                           alt="After cleanup proof"
                           className="w-full h-full object-cover"
+                          onError={(e: any) => {
+                            e.currentTarget.src = DEFAULT_WASTE_PLACEHOLDER;
+                          }}
                         />
                       ) : (
+
                         <span className="text-[11px] text-[#86868b]">
                           Pending collector photo
                         </span>

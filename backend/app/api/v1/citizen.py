@@ -49,8 +49,8 @@ async def submit_waste_report(
     if not (-90.0 <= latitude <= 90.0) or not (-180.0 <= longitude <= 180.0):
         raise HTTPException(status_code=400, detail="Invalid latitude or longitude coordinates.")
 
-    # Save uploaded image
-    image_url = await storage_service.save_report_image(file)
+    # Save uploaded image with persistent database backing
+    image_url = await storage_service.save_report_image(file, db=db)
 
     # Determine AI classification: use provided or run model directly
     if not predicted_class or confidence is None or not class_probabilities_json:

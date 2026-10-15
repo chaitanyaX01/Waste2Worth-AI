@@ -7,6 +7,10 @@ __pycache__/
 *$py.class
 *.so
 .pytest_cache/
+*.db
+*.sqlite
+*.sqlite3
+
 
 # Node & Next.js
 node_modules/

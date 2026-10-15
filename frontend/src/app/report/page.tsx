@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { submitWasteReport, predictWaste } from "@/lib/api";
+import { submitWasteReport, predictWaste, downscaleImageForPrediction } from "@/lib/api";
 import { PredictionResult } from "@/lib/types";
 import {
   resolveBestLocation,
@@ -368,8 +368,16 @@ export default function ReportWastePage() {
     setErrorMsg(null);
 
     try {
+      const optimizedBlob = await downscaleImageForPrediction(imageFile, 1200, 0.85);
+      const uploadFile =
+        optimizedBlob instanceof File
+          ? optimizedBlob
+          : new File([optimizedBlob], imageFile.name || "waste.jpg", {
+              type: optimizedBlob.type || "image/jpeg",
+            });
+
       const formData = new FormData();
-      formData.append("file", imageFile);
+      formData.append("file", uploadFile);
       formData.append("category", category);
       formData.append("predicted_class", category);
       formData.append("confidence", confidence.toString());

@@ -536,12 +536,19 @@ export async function getAdminCitizens(): Promise<User[]> {
   return response.json();
 }
 
+export const DEFAULT_WASTE_PLACEHOLDER =
+  "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400' fill='none'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230a0a0c'/%3E%3Cstop offset='100%25' stop-color='%23141418'/%3E%3C/linearGradient%3E%3ClinearGradient id='brand' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2310b981'/%3E%3Cstop offset='100%25' stop-color='%23059669'/%3E%3C/linearGradient%3E%3Cdefs%3E%3Crect width='600' height='400' fill='url(%23bg)'/%3E%3Crect x='2' y='2' width='596' height='396' rx='20' stroke='%2327272a' stroke-width='1.5' stroke-dasharray='6 6'/%3E%3Ccircle cx='300' cy='165' r='46' fill='%2318181b' stroke='%2327272a' stroke-width='2'/%3E%3Cpath d='M285 152h30l5 7h10c4.4 0 8 3.6 8 8v28c0 4.4-3.6 8-8 8H270c-4.4 0-8-3.6-8-8v-28c0-4.4 3.6-8 8-8h10l5-7z' stroke='url(%23brand)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='300' cy='172' r='11' stroke='url(%23brand)' stroke-width='2.5'/%3E%3Ctext x='300' y='248' fill='%23f4f4f5' font-family='-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif' font-size='15' font-weight='600' text-anchor='middle' letter-spacing='0.5'%3EWaste2Worth AI Evidence%3C/text%3E%3Ctext x='300' y='272' fill='%2371717a' font-family='-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif' font-size='12' text-anchor='middle'%3ECommunity Report Record%3C/text%3E%3C/svg%3E";
+
 export function resolveImageUrl(path?: string | null): string {
-  if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
+  if (!path || !path.trim()) return DEFAULT_WASTE_PLACEHOLDER;
+  const p = path.trim();
+  if (p.startsWith("data:") || p.startsWith("blob:")) {
+    return p;
   }
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  if (p.startsWith("http://") || p.startsWith("https://")) {
+    return p;
+  }
+  const cleanPath = p.startsWith("/") ? p : `/${p}`;
   const base = getApiBaseUrl();
   if (base) {
     return `${base}${cleanPath}`;
@@ -549,7 +556,8 @@ export function resolveImageUrl(path?: string | null): string {
   if (typeof window !== "undefined") {
     return cleanPath;
   }
-  const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000";
+  const backendUrl = process.env.BACKEND_INTERNAL_URL || "https://waste2worth-backend-welr.onrender.com";
   return `${backendUrl}${cleanPath}`;
 }
+
 

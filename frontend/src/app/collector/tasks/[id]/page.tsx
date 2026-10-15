@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { getTaskDetail, updateTaskStatus, uploadTaskEvidence, resolveImageUrl } from "@/lib/api";
+import { getTaskDetail, updateTaskStatus, uploadTaskEvidence, resolveImageUrl, DEFAULT_WASTE_PLACEHOLDER, downscaleImageForPrediction } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
 import {
   ChevronLeft,
@@ -69,7 +69,14 @@ export default function CollectorTaskDetailPage({
 
     setUploadingEvidence(true);
     try {
-      await uploadTaskEvidence(task.id, evidenceFile, "AFTER", evidenceNotes || "Cleaned up site completely.");
+      const optimizedBlob = await downscaleImageForPrediction(evidenceFile, 1200, 0.85);
+      const fileToUpload =
+        optimizedBlob instanceof File
+          ? optimizedBlob
+          : new File([optimizedBlob], evidenceFile.name || "evidence.jpg", {
+              type: optimizedBlob.type || "image/jpeg",
+            });
+      await uploadTaskEvidence(task.id, fileToUpload, "AFTER", evidenceNotes || "Cleaned up site completely.");
       await updateTaskStatus(task.id, "COLLECTED", "Waste picked up. Evidence submitted for admin review.");
       setCollectionSubmitted(true);
     } catch (e: any) {
@@ -168,8 +175,9 @@ export default function CollectorTaskDetailPage({
                 alt="Before cleanup"
                 className="w-full h-full object-cover"
                 onError={(e: any) => {
-                  e.target.src = "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&auto=format&fit=crop&q=70";
+                  e.currentTarget.src = DEFAULT_WASTE_PLACEHOLDER;
                 }}
+
               />
             </div>
           </div>

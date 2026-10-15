@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getAdminReports, verifyReport, getAdminCollectors, assignCollectorToReport, resolveImageUrl } from "@/lib/api";
+import { getAdminReports, verifyReport, getAdminCollectors, assignCollectorToReport, resolveImageUrl, DEFAULT_WASTE_PLACEHOLDER } from "@/lib/api";
 import { WasteReport, CollectorProfile } from "@/lib/types";
 import {
   Search,
@@ -238,13 +238,17 @@ export default function AdminReportsPage() {
 
             {/* Waste Photo */}
             {selectedReport.image_url && (
-              <div className="rounded-2xl overflow-hidden border border-white/[0.08] mb-6 aspect-video bg-black">
+              <div className="rounded-2xl overflow-hidden border border-white/[0.08] mb-6 aspect-video bg-[#121214]">
                 <img
                   src={resolveImageUrl(selectedReport.image_url)}
                   alt="Waste report evidence"
                   className="w-full h-full object-cover"
+                  onError={(e: any) => {
+                    e.currentTarget.src = DEFAULT_WASTE_PLACEHOLDER;
+                  }}
                 />
               </div>
+
             )}
 
             {/* Citizen Notes */}

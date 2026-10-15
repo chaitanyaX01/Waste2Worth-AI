@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getCollectorTasks, updateTaskStatus, resolveImageUrl } from "@/lib/api";
+import { getCollectorTasks, updateTaskStatus, resolveImageUrl, DEFAULT_WASTE_PLACEHOLDER } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
 import { MapPin, Navigation, ArrowRight, Check, ChevronRight } from "lucide-react";
 
@@ -92,8 +92,9 @@ export default function CollectorDashboardPage() {
                 alt="Waste spot"
                 className="w-full h-full object-cover"
                 onError={(e: any) => {
-                  e.target.src = "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=600&auto=format&fit=crop&q=80";
+                  e.currentTarget.src = DEFAULT_WASTE_PLACEHOLDER;
                 }}
+
               />
               <div className="absolute top-3.5 right-3.5 px-3 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/10 text-xs font-mono text-white">
                 {activeTask.priority}

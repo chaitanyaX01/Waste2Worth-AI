@@ -18,6 +18,7 @@ from app.models.reward import (
     Badge,
     UserBadge
 )
+from app.models.media import MediaFile
 
 __all__ = [
     "Base",
@@ -39,5 +40,7 @@ __all__ = [
     "Reward",
     "RewardTransaction",
     "Badge",
-    "UserBadge"
+    "UserBadge",
+    "MediaFile"
 ]
+

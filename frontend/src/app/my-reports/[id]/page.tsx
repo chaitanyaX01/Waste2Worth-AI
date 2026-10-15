@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { getReportDetail, resolveImageUrl } from "@/lib/api";
+import { getReportDetail, resolveImageUrl, DEFAULT_WASTE_PLACEHOLDER } from "@/lib/api";
 import { WasteReport } from "@/lib/types";
 import { ChevronLeft, MapPin, Calendar, Check, Clock } from "lucide-react";
 
@@ -161,13 +161,17 @@ export default function ReportDetailPage({
           <p className="text-xs font-semibold tracking-widest text-[#86868b] uppercase mb-4">
             Evidence Photo
           </p>
-          <div className="rounded-3xl overflow-hidden border border-white/[0.08] max-w-sm">
+          <div className="rounded-3xl overflow-hidden border border-white/[0.08] max-w-sm bg-[#121214]">
             <img
               src={resolveImageUrl(report.image_url)}
               alt="Report proof"
               className="w-full h-auto object-cover"
+              onError={(e: any) => {
+                e.currentTarget.src = DEFAULT_WASTE_PLACEHOLDER;
+              }}
             />
           </div>
+
         </div>
       )}
     </div>
