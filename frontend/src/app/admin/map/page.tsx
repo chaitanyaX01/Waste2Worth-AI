@@ -165,20 +165,27 @@ export default function AdminMapPage() {
         const isCompleted = report.status === "COMPLETED" || report.status === "COLLECTED";
 
         // Blinking logic:
-        // Unresolved reports blink actively (radar beacon) to highlight urgent waste spots.
-        // 100% solved reports stop blinking completely and show a calm solid green verified marker.
+        // Unresolved reports blink actively with a prominent radar beacon (56px wave, 26px core).
+        // 100% solved reports stop blinking completely and show a prominent verified emerald checkmark badge.
         const customIcon = L.divIcon({
           className: "apple-map-marker",
           html: isCompleted
-            ? `<div style="position: relative; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">
-                <div style="width: 14px; height: 14px; border-radius: 50%; background-color: #10b981; border: 2.5px solid #ffffff; box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);"></div>
+            ? `<div style="position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <div style="width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, #34d399 0%, #059669 100%); border: 3.5px solid #ffffff; box-shadow: 0 0 16px rgba(16, 185, 129, 0.95), 0 2px 8px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
               </div>`
-            : `<div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-                <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background-color: rgba(239, 68, 68, 0.35); animation: radarWave 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-                <div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background-color: #ef4444; border: 2.5px solid #ffffff; animation: radarBlink 1.2s ease-in-out infinite; box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);"></div>
+            : `<div style="position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <div style="position: absolute; width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle, rgba(239, 68, 68, 0.45) 0%, rgba(239, 68, 68, 0.1) 60%, transparent 100%); animation: radarWave 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                <div style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background: rgba(239, 68, 68, 0.25); animation: radarWave 1.6s cubic-bezier(0, 0, 0.2, 1) infinite 0.5s;"></div>
+                <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, #ff4d4d 0%, #dc2626 100%); border: 3.5px solid #ffffff; animation: radarBlink 1.2s ease-in-out infinite; box-shadow: 0 0 18px rgba(239, 68, 68, 1), 0 2px 10px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+                  <div style="width: 6px; height: 6px; border-radius: 50%; background-color: #ffffff;"></div>
+                </div>
               </div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
+          iconSize: [56, 56],
+          iconAnchor: [28, 28],
         });
 
         const marker = L.marker([lat, lng], { icon: customIcon }).addTo(markersLayer);
@@ -392,11 +399,15 @@ export default function AdminMapPage() {
               onChange={(e) => setSelectedCollectorId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-black border border-white/[0.1] text-xs text-white focus:outline-none"
             >
-              {collectors.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.service_area})
-                </option>
-              ))}
+              {collectors.length === 0 ? (
+                <option value="">No collectors registered</option>
+              ) : (
+                collectors.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.phone ? `(${c.phone})` : ""} - {c.service_area || "Field Zone"}
+                  </option>
+                ))
+              )}
             </select>
 
             <button

@@ -351,6 +351,28 @@ def get_all_collectors(
     current_user: User = Depends(require_roles([UserRoleEnum.ADMIN])),
     db: Session = Depends(get_db)
 ):
+    # Auto-provision or reconcile any Users with COLLECTOR role missing a Collector profile row
+    try:
+        collector_users = db.query(User).join(User.role).filter(User.role.has(name=UserRoleEnum.COLLECTOR)).all()
+        for cu in collector_users:
+            col_rec = db.query(Collector).filter(Collector.user_id == cu.id).first()
+            if not col_rec:
+                clean_phone = "".join(filter(str.isdigit, cu.phone or ""))
+                clean_digits = clean_phone[-4:] if clean_phone else "0000"
+                col_rec = Collector(
+                    user_id=cu.id,
+                    employee_code=f"COL-{clean_digits}",
+                    organization="Municipal Waste Services",
+                    phone=clean_phone or cu.phone or "",
+                    service_area="Central Ward",
+                    is_available=True
+                )
+                db.add(col_rec)
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Error auto-provisioning collectors: {e}")
+        db.rollback()
+
     collectors = db.query(Collector).all()
     results = []
     for c in collectors:

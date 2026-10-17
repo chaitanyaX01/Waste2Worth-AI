@@ -99,20 +99,27 @@ export default function CollectorMapPage() {
             task.report.status === "COLLECTED";
 
           // Blinking logic:
-          // Unresolved tasks actively blink with radar waves.
-          // 100% solved tasks stop blinking completely.
+          // Unresolved tasks actively blink with a prominent radar beacon (56px wave, 26px core).
+          // 100% solved tasks stop blinking completely and show a calm solid green verified checkmark.
           const customIcon = L.divIcon({
             className: "collector-dot",
             html: isCompleted
-              ? `<div style="position: relative; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">
-                  <div style="width: 14px; height: 14px; border-radius: 50%; background-color: #10b981; border: 2.5px solid #ffffff; box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);"></div>
+              ? `<div style="position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <div style="width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, #34d399 0%, #059669 100%); border: 3.5px solid #ffffff; box-shadow: 0 0 16px rgba(16, 185, 129, 0.95), 0 2px 8px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
                 </div>`
-              : `<div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-                  <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background-color: rgba(245, 158, 11, 0.35); animation: radarWave 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-                  <div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background-color: #f59e0b; border: 2.5px solid #ffffff; animation: radarBlink 1.2s ease-in-out infinite; box-shadow: 0 0 12px rgba(245, 158, 11, 0.9);"></div>
+              : `<div style="position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <div style="position: absolute; width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle, rgba(245, 158, 11, 0.45) 0%, rgba(245, 158, 11, 0.1) 60%, transparent 100%); animation: radarWave 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                  <div style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background: rgba(245, 158, 11, 0.25); animation: radarWave 1.6s cubic-bezier(0, 0, 0.2, 1) infinite 0.5s;"></div>
+                  <div style="position: relative; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, #fbbf24 0%, #d97706 100%); border: 3.5px solid #ffffff; animation: radarBlink 1.2s ease-in-out infinite; box-shadow: 0 0 18px rgba(245, 158, 11, 1), 0 2px 10px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 6px; height: 6px; border-radius: 50%; background-color: #ffffff;"></div>
+                  </div>
                 </div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14],
+            iconSize: [56, 56],
+            iconAnchor: [28, 28],
           });
 
           const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);

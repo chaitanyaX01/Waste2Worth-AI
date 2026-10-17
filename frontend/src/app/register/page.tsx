@@ -179,14 +179,15 @@ export default function RegisterPage() {
         customName: googleUserData.name,
         phone: cleanPhone,
         otp_code: googleOtpCode.trim(),
+        role: role,
       });
 
       if (res.success) {
         const storedRole = localStorage.getItem("w2w_user")
           ? JSON.parse(localStorage.getItem("w2w_user")!).role
-          : "CITIZEN";
+          : role;
         if (storedRole === "ADMIN") router.push("/admin/dashboard");
-        else if (storedRole === "COLLECTOR") router.push("/collector/dashboard");
+        else if (storedRole === "COLLECTOR" || role === "COLLECTOR") router.push("/collector/dashboard");
         else router.push("/dashboard");
       }
     } catch (err: any) {
@@ -436,6 +437,51 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={handleCompleteGoogleRegistration} className="space-y-3.5 pt-1">
+              {/* Role Selection for Google Account */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs text-[#86868b] flex items-center justify-between">
+                  <span>Select Account Role <span className="text-rose-400">*</span></span>
+                  <span className="text-[10px] text-emerald-400 font-medium">Choose Persona</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRole("CITIZEN")}
+                    className={`p-3 rounded-2xl text-left border transition-all ${
+                      role === "CITIZEN"
+                        ? "bg-emerald-500/15 border-emerald-500 text-emerald-300 font-bold shadow-md shadow-emerald-500/10"
+                        : "bg-[#0c0c0e] border-white/[0.08] text-[#86868b] hover:text-white"
+                    }`}
+                  >
+                    <span className="block text-xs font-semibold text-white">🌱 Citizen</span>
+                    <span className="block text-[10px] text-[#86868b] mt-0.5">Report waste & earn points</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("COLLECTOR")}
+                    className={`p-3 rounded-2xl text-left border transition-all ${
+                      role === "COLLECTOR"
+                        ? "bg-teal-500/15 border-teal-500 text-teal-300 font-bold shadow-md shadow-teal-500/10"
+                        : "bg-[#0c0c0e] border-white/[0.08] text-[#86868b] hover:text-white"
+                    }`}
+                  >
+                    <span className="block text-xs font-semibold text-white">🚛 Waste Collector</span>
+                    <span className="block text-[10px] text-[#86868b] mt-0.5">Assigned cleanups by Admin</span>
+                  </button>
+                </div>
+                <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[11px] text-[#86868b]">
+                  {role === "COLLECTOR" ? (
+                    <span className="text-teal-300">
+                      🚛 <strong>Field Collector:</strong> You will be listed in the Admin Portal for cleanup dispatch and map route tasks.
+                    </span>
+                  ) : (
+                    <span className="text-emerald-300">
+                      🌱 <strong>Eco Citizen:</strong> Submit waste reports with GPS coordinates, earn rewards, and redeem vouchers.
+                    </span>
+                  )}
+                </div>
+              </div>
+
               {/* Mobile Phone Input */}
               <div className="space-y-1.5">
                 <label className="text-xs text-[#86868b] flex items-center justify-between">
@@ -650,31 +696,47 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Role Selection */}
-                <div className="space-y-1">
-                  <label className="text-xs text-[#86868b]">Select Your Account Role</label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-[#86868b]">Select Your Account Role <span className="text-rose-400">*</span></label>
+                    <span className="text-[10px] text-emerald-400 font-medium">Select Persona</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setRole("CITIZEN")}
-                      className={`py-2.5 px-3 rounded-xl text-xs font-medium border text-center transition-all ${
+                      className={`p-3 rounded-2xl text-left border transition-all ${
                         role === "CITIZEN"
-                          ? "bg-emerald-500/10 border-emerald-500 text-emerald-300 font-bold"
+                          ? "bg-emerald-500/15 border-emerald-500 text-emerald-300 font-bold shadow-md shadow-emerald-500/10"
                           : "bg-[#0c0c0e] border-white/[0.08] text-[#86868b] hover:text-white"
                       }`}
                     >
-                      🌱 Citizen
+                      <span className="block text-xs font-semibold text-white">🌱 Citizen</span>
+                      <span className="block text-[10px] text-[#86868b] mt-0.5">Report waste & earn points</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setRole("COLLECTOR")}
-                      className={`py-2.5 px-3 rounded-xl text-xs font-medium border text-center transition-all ${
+                      className={`p-3 rounded-2xl text-left border transition-all ${
                         role === "COLLECTOR"
-                          ? "bg-teal-500/10 border-teal-500 text-teal-300 font-bold"
+                          ? "bg-teal-500/15 border-teal-500 text-teal-300 font-bold shadow-md shadow-teal-500/10"
                           : "bg-[#0c0c0e] border-white/[0.08] text-[#86868b] hover:text-white"
                       }`}
                     >
-                      🚛 Waste Collector
+                      <span className="block text-xs font-semibold text-white">🚛 Waste Collector</span>
+                      <span className="block text-[10px] text-[#86868b] mt-0.5">Field operator & dispatch</span>
                     </button>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[11px] text-[#86868b]">
+                    {role === "COLLECTOR" ? (
+                      <span className="text-teal-300">
+                        🚛 <strong>Field Collector:</strong> You will be listed in the Admin Portal assign dropdown list for task dispatch and route navigation.
+                      </span>
+                    ) : (
+                      <span className="text-emerald-300">
+                        🌱 <strong>Community Citizen:</strong> Submit geo-tagged reports, track cleanup progress in real-time, and earn redeemable points.
+                      </span>
+                    )}
                   </div>
                 </div>
 

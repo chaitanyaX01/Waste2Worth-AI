@@ -338,11 +338,15 @@ export default function AdminReportsPage() {
                     onChange={(e) => setSelectedCollectorId(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-black border border-white/[0.1] text-xs text-white focus:outline-none"
                   >
-                    {collectors.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.service_area})
-                      </option>
-                    ))}
+                    {collectors.length === 0 ? (
+                      <option value="">No collectors registered</option>
+                    ) : (
+                      collectors.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} {c.phone ? `(${c.phone})` : ""} - {c.service_area || "Field Zone"}
+                        </option>
+                      ))
+                    )}
                   </select>
 
                   <button

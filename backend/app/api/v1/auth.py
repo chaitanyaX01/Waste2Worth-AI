@@ -103,8 +103,8 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     # If role is COLLECTOR, create collector profile
-    if user_in.role == UserRoleEnum.COLLECTOR:
-        employee_code = user_in.employee_code or f"EMP-{uuid.uuid4().hex[:6].upper()}"
+    if role_enum_val == UserRoleEnum.COLLECTOR:
+        employee_code = user_in.employee_code or f"COL-{clean_phone[-4:] if clean_phone else '0000'}"
         collector_profile = Collector(
             user_id=new_user.id,
             employee_code=employee_code,
@@ -259,8 +259,37 @@ def firebase_verify(req: FirebaseVerifyRequest, db: Session = Depends(get_db)):
         if user:
             # User exists but was missing phone -> update verified phone
             user.phone = clean_digits
-            if name:
+            if name and user.name in ["Eco Citizen", "Mobile User", "Citizen", "Citizen 0188"]:
                 user.name = name
+
+            role_enum_val = req.role if req.role else UserRoleEnum.CITIZEN
+            if isinstance(role_enum_val, str):
+                try:
+                    role_enum_val = UserRoleEnum(role_enum_val.upper())
+                except ValueError:
+                    role_enum_val = UserRoleEnum.CITIZEN
+
+            if role_enum_val == UserRoleEnum.COLLECTOR:
+                collector_role = db.query(Role).filter(Role.name == UserRoleEnum.COLLECTOR).first()
+                if not collector_role:
+                    collector_role = Role(name=UserRoleEnum.COLLECTOR, description="Field worker/sanitation team collecting reported waste")
+                    db.add(collector_role)
+                    db.commit()
+                    db.refresh(collector_role)
+                user.role_id = collector_role.id
+
+                collector_profile = db.query(Collector).filter(Collector.user_id == user.id).first()
+                if not collector_profile:
+                    collector_profile = Collector(
+                        user_id=user.id,
+                        employee_code=f"COL-{clean_digits[-4:] if clean_digits else '0000'}",
+                        organization="Municipal Waste Services",
+                        phone=clean_digits,
+                        service_area="Central Ward",
+                        is_available=True
+                    )
+                    db.add(collector_profile)
+
             db.commit()
             db.refresh(user)
         else:
@@ -281,8 +310,8 @@ def firebase_verify(req: FirebaseVerifyRequest, db: Session = Depends(get_db)):
                 db.commit()
                 db.refresh(role)
 
-            fallback_name = name or f"Citizen {clean_digits[-4:]}"
-            fallback_email = email or f"citizen_{clean_digits}@waste2worth.org"
+            fallback_name = name or (f"Collector {clean_digits[-4:]}" if role_enum_val == UserRoleEnum.COLLECTOR else f"Citizen {clean_digits[-4:]}")
+            fallback_email = email or f"{'collector' if role_enum_val == UserRoleEnum.COLLECTOR else 'citizen'}_{clean_digits}@waste2worth.org"
 
             user = User(
                 name=fallback_name,
@@ -300,10 +329,10 @@ def firebase_verify(req: FirebaseVerifyRequest, db: Session = Depends(get_db)):
             if role_enum_val == UserRoleEnum.COLLECTOR:
                 collector_profile = Collector(
                     user_id=user.id,
-                    employee_code=f"EMP-{uuid.uuid4().hex[:6].upper()}",
+                    employee_code=f"COL-{clean_digits[-4:] if clean_digits else '0000'}",
                     organization="Municipal Waste Services",
                     phone=clean_digits,
-                    service_area="Central District",
+                    service_area="Central Ward",
                     is_available=True
                 )
                 db.add(collector_profile)
@@ -497,24 +526,37 @@ def verify_otp(req: OtpVerifyRequest, db: Session = Depends(get_db)):
             detail=verify_msg
         )
 
-    # Find existing user by phone or fallback citizen email
-    fallback_email = f"citizen_{clean_digits}@waste2worth.org"
+    # Resolve requested role
+    role_enum_val = req.role if req.role else UserRoleEnum.CITIZEN
+    if isinstance(role_enum_val, str):
+        try:
+            role_enum_val = UserRoleEnum(role_enum_val.upper())
+        except ValueError:
+            role_enum_val = UserRoleEnum.CITIZEN
+
+    # Find existing user by phone or fallback email
+    fallback_email = f"{'collector' if role_enum_val == UserRoleEnum.COLLECTOR else 'citizen'}_{clean_digits}@waste2worth.org"
     user = db.query(User).filter(User.phone.like(f"%{clean_digits}")).first()
     if not user:
         user = db.query(User).filter(User.email == fallback_email).first()
+    if not user:
+        alt_email = f"citizen_{clean_digits}@waste2worth.org" if role_enum_val == UserRoleEnum.COLLECTOR else f"collector_{clean_digits}@waste2worth.org"
+        user = db.query(User).filter(User.email == alt_email).first()
 
     if not user:
-        role_enum_val = req.role if req.role else UserRoleEnum.CITIZEN
         role = db.query(Role).filter(Role.name == role_enum_val).first()
         if not role:
-            role = db.query(Role).filter(Role.name == UserRoleEnum.CITIZEN).first()
-        if not role:
-            role = Role(name=UserRoleEnum.CITIZEN, description="Community citizen reporting waste and earning points")
+            role_desc = {
+                UserRoleEnum.CITIZEN: "Community citizen reporting waste and earning points",
+                UserRoleEnum.COLLECTOR: "Field worker/sanitation team collecting reported waste",
+                UserRoleEnum.ADMIN: "Municipal administrator managing operations, verification, and analytics"
+            }.get(role_enum_val, "System user role")
+            role = Role(name=role_enum_val, description=role_desc)
             db.add(role)
             db.commit()
             db.refresh(role)
 
-        fallback_name = req.name.strip() if req.name else f"Citizen {clean_digits[-4:]}"
+        fallback_name = req.name.strip() if req.name else (f"Collector {clean_digits[-4:]}" if role_enum_val == UserRoleEnum.COLLECTOR else f"Citizen {clean_digits[-4:]}")
         user = User(
             name=fallback_name,
             email=fallback_email,
@@ -525,6 +567,49 @@ def verify_otp(req: OtpVerifyRequest, db: Session = Depends(get_db)):
             is_active=True
         )
         db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        if role_enum_val == UserRoleEnum.COLLECTOR:
+            collector_profile = Collector(
+                user_id=user.id,
+                employee_code=f"COL-{clean_digits[-4:] if clean_digits else '0000'}",
+                organization="Municipal Waste Services",
+                phone=clean_digits,
+                service_area="Central Ward",
+                is_available=True
+            )
+            db.add(collector_profile)
+            db.commit()
+    else:
+        # Existing user - update phone / name if needed
+        if req.name and req.name.strip() and user.name in ["Eco Citizen", "Mobile User", "Citizen", f"Citizen {clean_digits[-4:]}"]:
+            user.name = req.name.strip()
+        if not user.phone:
+            user.phone = clean_digits
+
+        # If user registered/verified as COLLECTOR, upgrade their role and ensure Collector profile exists
+        if role_enum_val == UserRoleEnum.COLLECTOR:
+            collector_role = db.query(Role).filter(Role.name == UserRoleEnum.COLLECTOR).first()
+            if not collector_role:
+                collector_role = Role(name=UserRoleEnum.COLLECTOR, description="Field worker/sanitation team collecting reported waste")
+                db.add(collector_role)
+                db.commit()
+                db.refresh(collector_role)
+            user.role_id = collector_role.id
+
+            collector_profile = db.query(Collector).filter(Collector.user_id == user.id).first()
+            if not collector_profile:
+                collector_profile = Collector(
+                    user_id=user.id,
+                    employee_code=f"COL-{clean_digits[-4:] if clean_digits else '0000'}",
+                    organization="Municipal Waste Services",
+                    phone=clean_digits,
+                    service_area="Central Ward",
+                    is_available=True
+                )
+                db.add(collector_profile)
+
         db.commit()
         db.refresh(user)
 

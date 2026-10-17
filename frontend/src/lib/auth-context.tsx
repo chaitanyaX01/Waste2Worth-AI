@@ -42,6 +42,7 @@ interface AuthContextType {
     customEmail?: string;
     customName?: string;
     idToken?: string;
+    role?: string;
   }) => Promise<GoogleAuthResult>;
   loginWithOtp: (phone: string, code: string, name?: string, role?: string) => Promise<void>;
   loginWithFirebaseToken: (payload: {
@@ -204,6 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     customEmail?: string;
     customName?: string;
     idToken?: string;
+    role?: string;
   }): Promise<GoogleAuthResult> => {
     setIsLoading(true);
     try {
@@ -232,7 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: email || undefined,
           phone: phone || undefined,
           otp_code: options?.otp_code,
-          role: "CITIZEN",
+          role: options?.role || "CITIZEN",
         });
 
         setToken(auth.access_token);
