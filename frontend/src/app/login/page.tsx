@@ -127,6 +127,13 @@ export default function LoginPage() {
       if (err.code === "auth/popup-closed-by-user") {
         return;
       }
+      if (err.code === "auth/unauthorized-domain" || err.message?.includes("unauthorized-domain")) {
+        const domain = typeof window !== "undefined" ? window.location.hostname : "this domain";
+        setError(
+          `Domain Authorization Required: '${domain}' is not added to Firebase Authorized Domains. To enable Google Sign-In, add '${domain}' in Firebase Console (Authentication > Settings > Authorized domains). In the meantime, use the WhatsApp OTP tab below to sign in instantly!`
+        );
+        return;
+      }
       setError(err.message || "Google sign-in failed. Please try again.");
     } finally {
       setGoogleLoading(false);
@@ -299,7 +306,12 @@ export default function LoginPage() {
         setCanResend(false);
       } catch (err: any) {
         console.error("Firebase phone OTP send error:", err);
-        setError(waErr.message || err.message || "Failed to send OTP verification code.");
+        if (err.code === "auth/unauthorized-domain" || err.message?.includes("unauthorized-domain")) {
+          const domain = typeof window !== "undefined" ? window.location.hostname : "this domain";
+          setError(`Domain '${domain}' is not authorized in Firebase yet. Add '${domain}' in Firebase Console → Authentication → Settings → Authorized domains.`);
+        } else {
+          setError(waErr.message || err.message || "Failed to send OTP verification code.");
+        }
       }
     } finally {
       setLoading(false);

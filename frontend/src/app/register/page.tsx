@@ -110,6 +110,13 @@ export default function RegisterPage() {
       if (err.code === "auth/popup-closed-by-user") {
         return;
       }
+      if (err.code === "auth/unauthorized-domain" || err.message?.includes("unauthorized-domain")) {
+        const domain = typeof window !== "undefined" ? window.location.hostname : "this domain";
+        setError(
+          `Domain Authorization Required: '${domain}' is not added to Firebase Authorized Domains. To enable Google Sign-In, add '${domain}' in Firebase Console (Authentication > Settings > Authorized domains). In the meantime, use the WhatsApp OTP tab below to register instantly!`
+        );
+        return;
+      }
       setError(err.message || "Google sign-in failed. Please try again.");
     } finally {
       setGoogleLoading(false);
