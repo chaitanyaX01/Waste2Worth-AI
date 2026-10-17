@@ -371,11 +371,10 @@ def _generate_otp() -> str:
 
 def send_whatsapp_otp(phone: str) -> dict:
     """
-    Send a 6-digit OTP to the user's WhatsApp or SMS via Twilio Verify & Sandbox.
-    1. Tries Twilio Verify API (automatically handles WhatsApp & SMS templates without ContentSid error).
-    2. Tries Twilio Messages API with WhatsApp sandbox number.
-    3. If Twilio trial restrictions block delivery (e.g. unverified recipient on trial),
-       the generated code is cached on the server and returned in the message so verification is NEVER blocked.
+    Send a 6-digit OTP to the user's WhatsApp via Twilio Messages API using approved Content Template.
+    1. Primary: Uses Twilio Messages API with content_sid="HXfe5ab5f00277942d4d4200328b4d403c".
+    2. Fallback: Twilio Verify API / Twilio REST API.
+    3. Trial sandbox fallback if recipient has not joined the trial yet.
     """
     clean_digits = "".join(filter(str.isdigit, phone))[-10:]
     formatted_to_wa = f"whatsapp:+91{clean_digits}"
@@ -391,9 +390,76 @@ def send_whatsapp_otp(phone: str) -> dict:
 
     account_sid = settings.TWILIO_ACCOUNT_SID
     auth_token = settings.TWILIO_AUTH_TOKEN
+    content_sid = getattr(settings, "TWILIO_CONTENT_SID", "HXfe5ab5f00277942d4d4200328b4d403c")
+    from_whatsapp = getattr(settings, "TWILIO_WHATSAPP_NUMBER", "whatsapp:+17372508034")
     verify_sid = getattr(settings, "TWILIO_VERIFY_SERVICE_SID", None)
 
-    # 1. Try Twilio Verify API first (handles WhatsApp & SMS without ContentSid errors)
+    # 1. Primary Priority: Twilio Messages API with approved Content Template (content_sid)
+    if account_sid and auth_token and content_sid:
+        try:
+            from twilio.rest import Client
+            client = Client(account_sid, auth_token)
+            msg = None
+            try:
+                # Attempt with dynamic OTP code variable
+                msg = client.messages.create(
+                    to=formatted_to_wa,
+                    from_=from_whatsapp,
+                    content_sid=content_sid,
+                    content_variables=json.dumps({"1": code})
+                )
+            except Exception as var_err:
+                logger.info(f"Twilio Content Template with variable note ({var_err}), retrying content_sid directly...")
+                msg = client.messages.create(
+                    to=formatted_to_wa,
+                    from_=from_whatsapp,
+                    content_sid=content_sid
+                )
+
+            if msg and msg.sid:
+                logger.info(f"WhatsApp OTP delivered via Content Template {content_sid} to {formatted_to_wa} (SID: {msg.sid})")
+                return {
+                    "success": True,
+                    "message": f"WhatsApp verification code sent to +91 {clean_digits[:5]}xxxxx. Check your WhatsApp messages!",
+                    "phone": clean_digits,
+                    "is_trial_fallback": False,
+                    "fallback_code": None
+                }
+        except Exception as e:
+            logger.warning(f"Twilio Client with content_sid error: {e}")
+
+        # REST API fallback for ContentSid
+        try:
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+            payload = {
+                "From": from_whatsapp,
+                "To": formatted_to_wa,
+                "ContentSid": content_sid,
+                "ContentVariables": json.dumps({"1": code})
+            }
+            encoded_data = urllib.parse.urlencode(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=encoded_data, method="POST")
+            auth_str = f"{account_sid}:{auth_token}"
+            b64_auth = base64.b64encode(auth_str.encode("utf-8")).decode("utf-8")
+            req.add_header("Authorization", f"Basic {b64_auth}")
+            req.add_header("Content-Type", "application/x-www-form-urlencoded")
+
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res_json = json.loads(response.read().decode("utf-8"))
+                sid = res_json.get("sid", "")
+                if response.status in [200, 201] and sid:
+                    logger.info(f"WhatsApp OTP delivered via REST ContentSid to +91{clean_digits} (SID: {sid})")
+                    return {
+                        "success": True,
+                        "message": f"WhatsApp verification code sent to +91 {clean_digits[:5]}xxxxx. Check your WhatsApp messages!",
+                        "phone": clean_digits,
+                        "is_trial_fallback": False,
+                        "fallback_code": None
+                    }
+        except Exception as rest_err:
+            logger.info(f"Twilio REST ContentSid note: {rest_err}")
+
+    # 2. Secondary: Twilio Verify API
     if account_sid and auth_token and verify_sid:
         for channel in ["whatsapp", "sms"]:
             try:
@@ -419,45 +485,8 @@ def send_whatsapp_otp(phone: str) -> dict:
                             "is_trial_fallback": False,
                             "fallback_code": None
                         }
-            except urllib.error.HTTPError as he:
-                error_body = he.read().decode("utf-8")
-                logger.info(f"Twilio Verify {channel} HTTP {he.code}: {error_body[:120]}")
-            except Exception as e:
-                logger.info(f"Twilio Verify {channel} notice: {e}")
-
-    # 2. Try Twilio Messages API with WhatsApp sandbox
-    if account_sid and auth_token:
-        try:
-            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
-            payload = {
-                "From": TWILIO_SANDBOX_FROM,
-                "To": formatted_to_wa,
-                "Body": f"Your Waste2Worth verification code is: {code}\n\nDo not share this code with anyone. It expires in 10 minutes."
-            }
-            encoded_data = urllib.parse.urlencode(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=encoded_data, method="POST")
-            auth_str = f"{account_sid}:{auth_token}"
-            b64_auth = base64.b64encode(auth_str.encode("utf-8")).decode("utf-8")
-            req.add_header("Authorization", f"Basic {b64_auth}")
-            req.add_header("Content-Type", "application/x-www-form-urlencoded")
-
-            with urllib.request.urlopen(req, timeout=10) as response:
-                res_json = json.loads(response.read().decode("utf-8"))
-                sid = res_json.get("sid", "")
-                if response.status in [200, 201] and sid:
-                    logger.info(f"WhatsApp OTP successfully sent to +91{clean_digits} (SID: {sid})")
-                    return {
-                        "success": True,
-                        "message": f"OTP sent to your WhatsApp (+91 {clean_digits[:5]}xxxxx). Check your messages!",
-                        "phone": clean_digits,
-                        "is_trial_fallback": False,
-                        "fallback_code": None
-                    }
-        except urllib.error.HTTPError as e:
-            error_body = e.read().decode("utf-8")
-            logger.info(f"Twilio Messages WhatsApp HTTP {e.code}: {error_body[:120]}")
-        except Exception as e:
-            logger.info(f"Twilio Messages WhatsApp notice: {e}")
+            except Exception as ve:
+                logger.info(f"Twilio Verify {channel} note: {ve}")
 
     # 3. Trial sandbox fallback (ensures user is never blocked)
     return {

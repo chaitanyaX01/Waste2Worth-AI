@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     TWILIO_SANDBOX_KEYWORD: str = os.getenv("TWILIO_SANDBOX_KEYWORD", "join twilio-trial")
     TWILIO_SANDBOX_NUMBER_DISPLAY: str = os.getenv("TWILIO_SANDBOX_NUMBER_DISPLAY", "+1 737 250 8034")
     TWILIO_VERIFY_SERVICE_SID: str = os.getenv("TWILIO_VERIFY_SERVICE_SID", "VA17bcb7880ff7f99ade25940e8096a97e")
+    TWILIO_CONTENT_SID: str = os.getenv("TWILIO_CONTENT_SID", "HXfe5ab5f00277942d4d4200328b4d403c")
 
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_DIR / ".env"),
