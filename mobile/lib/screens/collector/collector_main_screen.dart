@@ -79,12 +79,12 @@ class _CollectorMainScreenState extends State<CollectorMainScreen> {
             // Top Collector Overview Banner
             Container(
               padding: const EdgeInsets.all(16),
-              color: AppColors.emeraldPrimary.withOpacity(0.08),
+              color: AppColors.emeraldPrimary.withValues(alpha: 0.08),
               child: Row(
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     backgroundColor: AppColors.emeraldPrimary,
-                    child: const Icon(Icons.local_shipping, color: Colors.white),
+                    child: Icon(Icons.local_shipping, color: Colors.white),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -129,18 +129,18 @@ class _CollectorMainScreenState extends State<CollectorMainScreen> {
               child: prov.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : displayList.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.task_alt_outlined, size: 48, color: AppColors.textMuted),
-                              const SizedBox(height: 12),
-                              const Text(
+                              Icon(Icons.task_alt_outlined, size: 48, color: AppColors.textMuted),
+                              SizedBox(height: 12),
+                              Text(
                                 'No collection tasks assigned',
                                 style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                               ),
-                              const SizedBox(height: 4),
-                              const Text(
+                              SizedBox(height: 4),
+                              Text(
                                 'Check back for newly verified community waste reports.',
                                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                               ),
@@ -178,7 +178,7 @@ class _CollectorMainScreenState extends State<CollectorMainScreen> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: pColor.withOpacity(0.12),
+                                              color: pColor.withValues(alpha: 0.12),
                                               borderRadius: BorderRadius.circular(6),
                                               border: Border.all(color: pColor, width: 1),
                                             ),

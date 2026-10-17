@@ -11,10 +11,20 @@ import 'providers/predictions_provider.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/citizen/citizen_main_screen.dart';
 import 'screens/collector/collector_main_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/admin/admin_mobile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization notice: $e');
+  }
 
   await ApiConstants.loadSavedBaseUrl();
 

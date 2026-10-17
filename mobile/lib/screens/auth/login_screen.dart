@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
@@ -19,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
@@ -30,6 +33,50 @@ class _LoginScreenState extends State<LoginScreen> {
   void _fillDemo(String email, String password) {
     _emailController.text = email;
     _passwordController.text = password;
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      final googleSignIn = GoogleSignIn();
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() => _isGoogleLoading = false);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCred = await FirebaseAuth.instance.signInWithCredential(credential);
+      final idToken = await userCred.user?.getIdToken();
+
+      final auth = context.read<AuthProvider>();
+      final success = await auth.verifyFirebaseToken(
+        idToken: idToken ?? googleAuth.idToken ?? '',
+        email: googleUser.email,
+        name: googleUser.displayName ?? 'Eco Citizen',
+        role: 'CITIZEN',
+      );
+
+      if (success && mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google Sign-In failed: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -192,15 +239,74 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // Divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Continue with Google Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      backgroundColor: Colors.white,
+                    ),
+                    child: _isGoogleLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.g_mobiledata, size: 28, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text(
+                                'Continue with Google',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 Center(
-                  child: TextButton(
+                  child: TextButton.icon(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const PhoneOtpScreen()),
                       );
                     },
-                    child: const Text('Sign in with Mobile OTP instead'),
+                    icon: const Icon(Icons.phone_android, size: 18),
+                    label: const Text('Sign in with Mobile OTP instead'),
                   ),
                 ),
                 const SizedBox(height: 8),

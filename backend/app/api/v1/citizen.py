@@ -305,6 +305,7 @@ def _build_report_response(report: WasteReport) -> ReportResponse:
         report_code=report.report_code,
         citizen_id=report.citizen_id,
         citizen_name=report.citizen.name if report.citizen else "Citizen",
+        citizen_phone=report.citizen.phone if report.citizen else None,
         image_url=report.image_url,
         description=report.description,
         status=report.status,

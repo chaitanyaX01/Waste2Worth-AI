@@ -28,7 +28,7 @@ class EcoPointsBadge extends StatelessWidget {
           border: Border.all(color: const Color(0xFFFCD34D), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.amber.withOpacity(0.12),
+              color: Colors.amber.withValues(alpha: 0.12),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )

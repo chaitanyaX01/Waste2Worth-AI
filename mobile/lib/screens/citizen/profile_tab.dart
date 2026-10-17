@@ -73,7 +73,7 @@ class ProfileTab extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 32,
-                      backgroundColor: AppColors.emeraldPrimary.withOpacity(0.15),
+                      backgroundColor: AppColors.emeraldPrimary.withValues(alpha: 0.15),
                       child: Text(
                         (user?.name.isNotEmpty == true) ? user!.name[0].toUpperCase() : 'U',
                         style: const TextStyle(

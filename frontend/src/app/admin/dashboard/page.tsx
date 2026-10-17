@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { getAdminDashboardStats, getAdminReports } from "@/lib/api";
 import { DashboardStats, WasteReport } from "@/lib/types";
-import { ChevronRight, ArrowUpRight } from "lucide-react";
+import { ChevronRight, ArrowUpRight, Phone } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -129,13 +129,18 @@ export default function AdminDashboardPage() {
                 className="py-4 flex items-center justify-between group transition-colors px-2 hover:bg-white/[0.02] rounded-xl"
               >
                 <div>
-                  <div className="flex items-baseline gap-2.5">
+                  <div className="flex flex-wrap items-baseline gap-2.5">
                     <span className="text-sm font-mono font-medium text-white group-hover:text-purple-400 transition-colors">
                       {r.report_code}
                     </span>
                     <span className="text-sm text-[#86868b] capitalize">
                       {r.ai_prediction?.predicted_class || "Waste"} · {((r.ai_prediction?.confidence ?? 0.92) * 100).toFixed(0)}%
                     </span>
+                    {r.citizen_phone && (
+                      <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        <Phone className="w-2.5 h-2.5" /> +91 {r.citizen_phone}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs sm:text-sm text-[#86868b] truncate max-w-xs sm:max-w-md mt-1">
                     {r.location.address || `GPS: ${r.location.latitude.toFixed(4)}, ${r.location.longitude.toFixed(4)}`}

@@ -59,6 +59,7 @@ export interface WasteReport {
   report_code: string;
   citizen_id: string;
   citizen_name: string;
+  citizen_phone?: string;
   image_url: string;
   description?: string;
   status: "PENDING" | "VERIFIED" | "ASSIGNED" | "IN_PROGRESS" | "COLLECTED" | "COMPLETED" | "REJECTED" | "CANCELLED";

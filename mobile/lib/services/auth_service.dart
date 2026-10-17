@@ -66,6 +66,7 @@ class AuthService {
     required String email,
     required String password,
     required String phone,
+    String? otpCode,
     String role = 'CITIZEN',
     String? employeeCode,
     String? serviceArea,
@@ -79,6 +80,7 @@ class AuthService {
         'email': email.trim().toLowerCase(),
         'password': password,
         'phone': cleanPhone,
+        if (otpCode != null) 'otp_code': otpCode.trim(),
         'role': role.toUpperCase(),
         if (employeeCode != null) 'employee_code': employeeCode,
         if (serviceArea != null) 'service_area': serviceArea,
@@ -125,6 +127,48 @@ class AuthService {
       }),
     );
 
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final data = json.decode(response.body);
+      final token = data['access_token']?.toString();
+      await ApiService().setAuthToken(token);
+      return await refreshProfile();
+    } else {
+      throw _parseAuthError(response);
+    }
+  }
+
+  // -------------------------------------------------------------
+  // WhatsApp OTP Authentication
+  // -------------------------------------------------------------
+  Future<void> sendOtp(String phone) async {
+    final response = await http.post(
+      Uri.parse(ApiConstants.sendOtpUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'phone': phone}),
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    } else {
+      throw _parseAuthError(response);
+    }
+  }
+
+  Future<UserModel> verifyOtp({
+    required String phone,
+    required String code,
+    String? name,
+    String role = 'CITIZEN',
+  }) async {
+    final response = await http.post(
+      Uri.parse(ApiConstants.verifyOtpUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'phone': phone,
+        'code': code,
+        if (name != null) 'name': name,
+        'role': role,
+      }),
+    );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final data = json.decode(response.body);
       final token = data['access_token']?.toString();

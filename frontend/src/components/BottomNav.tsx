@@ -140,15 +140,15 @@ export default function BottomNav() {
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/85 backdrop-blur-2xl border-t border-white/[0.08] px-4 py-2.5 safe-area-pb">
       <div className="flex items-center justify-around max-w-md mx-auto">
         <Link
-          href="/"
+          href="/explore"
           className={`flex flex-col items-center gap-1 py-1 px-2.5 transition-all ${
-            pathname === "/"
+            pathname === "/explore"
               ? "text-emerald-400 font-semibold"
               : "text-[#86868b] hover:text-white"
           }`}
         >
           <Home className="w-5 h-5" />
-          <span className="text-xs tracking-tight">Home</span>
+          <span className="text-xs tracking-tight">Explore</span>
         </Link>
 
         <Link

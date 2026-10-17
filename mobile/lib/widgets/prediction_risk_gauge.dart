@@ -54,7 +54,7 @@ class PredictionRiskGauge extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: riskColor.withOpacity(0.12),
+                    color: riskColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: riskColor, width: 1),
                   ),

@@ -297,7 +297,7 @@ class _ReportWasteScreenState extends State<ReportWasteScreen> {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
                   contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 ),

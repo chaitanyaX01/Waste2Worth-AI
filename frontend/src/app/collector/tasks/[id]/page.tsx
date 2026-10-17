@@ -11,7 +11,9 @@ import {
   Check,
   Navigation,
   ArrowRight,
-  Upload
+  Upload,
+  Phone,
+  MessageCircle
 } from "lucide-react";
 
 export default function CollectorTaskDetailPage({
@@ -142,7 +144,7 @@ export default function CollectorTaskDetailPage({
       </Link>
 
       {/* Task Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-baseline justify-between mb-1">
           <h1 className="text-2xl font-semibold text-white tracking-tight capitalize">
             {task.report.ai_prediction?.predicted_class || "Waste"} Collection
@@ -155,6 +157,41 @@ export default function CollectorTaskDetailPage({
           <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span className="truncate">{task.report.location.address || "Target Street Address"}</span>
         </p>
+      </div>
+
+      {/* Citizen Contact Card */}
+      <div className="mb-6 p-4 rounded-2xl bg-[#0c0c0e] border border-white/[0.08] space-y-2.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
+            <Phone className="w-3.5 h-3.5 text-emerald-400" />
+            Citizen Mobile
+          </span>
+          <span className="font-mono text-white font-medium text-xs">
+            {task.report.citizen_phone ? `+91 ${task.report.citizen_phone}` : "Not provided"}
+          </span>
+        </div>
+        {task.report.citizen_phone && (
+          <div className="flex items-center gap-2 pt-1">
+            <a
+              href={`tel:+91${task.report.citizen_phone}`}
+              className="flex-1 py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              Call Citizen
+            </a>
+            <a
+              href={`https://wa.me/91${task.report.citizen_phone}?text=${encodeURIComponent(
+                `Hello! I am your Waste2Worth sanitation collector arriving for cleanup task ${task.report.report_code}. Could you assist with directions?`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-2 px-3 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              WhatsApp
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Before / After Evidence Visual Section */}

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { getCollectorTasks } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
-import { Navigation, ArrowRight, X } from "lucide-react";
+import { Navigation, ArrowRight, X, Phone, MessageCircle } from "lucide-react";
 
 export default function CollectorMapPage() {
   const router = useRouter();
@@ -92,14 +92,27 @@ export default function CollectorMapPage() {
           const lng = task.report.location.longitude;
           if (!lat || !lng) return;
 
+          const isCompleted =
+            task.status === "COMPLETED" ||
+            task.status === "COLLECTED" ||
+            task.report.status === "COMPLETED" ||
+            task.report.status === "COLLECTED";
+
+          // Blinking logic:
+          // Unresolved tasks actively blink with radar waves.
+          // 100% solved tasks stop blinking completely.
           const customIcon = L.divIcon({
             className: "collector-dot",
-            html: `<div style="position: relative; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">
-              <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background-color: #ffd60a; opacity: 0.3; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-              <div style="position: relative; width: 12px; height: 12px; border-radius: 50%; background-color: #ffd60a; border: 2px solid #000000;"></div>
-            </div>`,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11],
+            html: isCompleted
+              ? `<div style="position: relative; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">
+                  <div style="width: 14px; height: 14px; border-radius: 50%; background-color: #10b981; border: 2.5px solid #ffffff; box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);"></div>
+                </div>`
+              : `<div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+                  <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background-color: rgba(245, 158, 11, 0.35); animation: radarWave 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                  <div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background-color: #f59e0b; border: 2.5px solid #ffffff; animation: radarBlink 1.2s ease-in-out infinite; box-shadow: 0 0 12px rgba(245, 158, 11, 0.9);"></div>
+                </div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
           });
 
           const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
@@ -169,6 +182,41 @@ export default function CollectorMapPage() {
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Citizen Contact Card */}
+            <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#86868b] flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  Citizen Mobile
+                </span>
+                <span className="font-mono text-white font-medium text-[11px]">
+                  {selectedTask.report.citizen_phone ? `+91 ${selectedTask.report.citizen_phone}` : "Not provided"}
+                </span>
+              </div>
+              {selectedTask.report.citizen_phone && (
+                <div className="flex items-center gap-2 pt-1">
+                  <a
+                    href={`tel:+91${selectedTask.report.citizen_phone}`}
+                    className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/25 text-emerald-400 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Phone className="w-3 h-3" />
+                    Call Citizen
+                  </a>
+                  <a
+                    href={`https://wa.me/91${selectedTask.report.citizen_phone}?text=${encodeURIComponent(
+                      `Hello from Waste2Worth! I am arriving for cleanup task ${selectedTask.report.report_code}.`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-1.5 px-2 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/25 text-teal-300 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    WhatsApp
+                  </a>
+                </div>
+              )}
             </div>
 
             <div className="pt-2 flex items-center gap-2">

@@ -44,7 +44,7 @@ export default function Navbar() {
       ];
     }
     return [
-      { label: "Overview", href: "/" },
+      { label: "Overview", href: "/explore" },
       { label: "Impact", href: "/dashboard" },
       { label: "Scan Waste", href: "/scanner", isSpecial: true },
       { label: "Report", href: "/report" },

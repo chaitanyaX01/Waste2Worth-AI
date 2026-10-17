@@ -2,17 +2,30 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "./types";
-import { getCurrentUser, loginUser, registerUser } from "./api";
+import { getCurrentUser, loginUser, registerUser, verifyFirebaseTokenWithBackend, verifyWhatsAppOtp } from "./api";
+import { signInWithPopup } from "firebase/auth";
+import { firebaseAuth, googleProvider } from "./firebase";
 
 export interface RegisterUserData {
   name: string;
   email: string;
   password: string;
   phone: string;
+  otp_code?: string;
   role?: string;
   employee_code?: string;
   organization?: string;
   service_area?: string;
+}
+
+export interface GoogleAuthResult {
+  success: boolean;
+  requiresPhoneVerification?: boolean;
+  googleUser?: {
+    email: string;
+    name: string;
+    idToken: string;
+  };
 }
 
 interface AuthContextType {
@@ -23,6 +36,20 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   register: (data: RegisterUserData) => Promise<void>;
+  loginWithGoogle: (options?: {
+    phone?: string;
+    otp_code?: string;
+    customEmail?: string;
+    customName?: string;
+    idToken?: string;
+  }) => Promise<GoogleAuthResult>;
+  loginWithOtp: (phone: string, code: string, name?: string, role?: string) => Promise<void>;
+  loginWithFirebaseToken: (payload: {
+    id_token: string;
+    phone?: string;
+    name?: string;
+    role?: string;
+  }) => Promise<void>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
   updatePointsBalance: (points: number) => void;
@@ -171,6 +198,153 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
 
+  const loginWithGoogle = async (options?: {
+    phone?: string;
+    otp_code?: string;
+    customEmail?: string;
+    customName?: string;
+    idToken?: string;
+  }): Promise<GoogleAuthResult> => {
+    setIsLoading(true);
+    try {
+      let idToken = options?.idToken;
+      let email = options?.customEmail;
+      let name = options?.customName;
+      let phone = options?.phone;
+
+      // If neither idToken nor customEmail is provided, initiate Firebase Google popup
+      if (!idToken && !email) {
+        const result = await signInWithPopup(firebaseAuth, googleProvider);
+        idToken = await result.user.getIdToken();
+        email = result.user.email || undefined;
+        name = result.user.displayName || undefined;
+        phone = phone || result.user.phoneNumber || undefined;
+      }
+
+      if (!idToken) {
+        throw new Error("Unable to obtain Google authentication token.");
+      }
+
+      try {
+        const auth = await verifyFirebaseTokenWithBackend({
+          id_token: idToken,
+          name: name || undefined,
+          email: email || undefined,
+          phone: phone || undefined,
+          otp_code: options?.otp_code,
+          role: "CITIZEN",
+        });
+
+        setToken(auth.access_token);
+        setRole(auth.role as UserRole);
+
+        const initialUser: User = {
+          id: auth.user_id,
+          name: auth.name,
+          email: auth.email,
+          phone: phone || "",
+          role: auth.role,
+          points_balance: 50,
+          is_active: true,
+          created_at: new Date().toISOString(),
+        };
+        setUser(initialUser);
+
+        getCurrentUser()
+          .then((profile) => setUser(profile))
+          .catch((e) => console.warn("Background profile fetch:", e));
+
+        return { success: true };
+      } catch (err: any) {
+        if (err.code === "PHONE_VERIFICATION_REQUIRED") {
+          return {
+            success: false,
+            requiresPhoneVerification: true,
+            googleUser: {
+              email: err.email || email || "",
+              name: err.name || name || "Citizen",
+              idToken,
+            },
+          };
+        }
+        throw err;
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithOtp = async (phone: string, code: string, name?: string, role?: string) => {
+    setIsLoading(true);
+    try {
+      const auth = await verifyWhatsAppOtp({
+        phone,
+        code,
+        name,
+        role: role || "CITIZEN",
+      });
+
+      setToken(auth.access_token);
+      setRole(auth.role as UserRole);
+
+      const initialUser: User = {
+        id: auth.user_id,
+        name: auth.name,
+        email: auth.email,
+        phone,
+        role: auth.role,
+        points_balance: 50,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+      setUser(initialUser);
+
+      getCurrentUser()
+        .then((profile) => setUser(profile))
+        .catch((e) => console.warn("Background profile fetch:", e));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithFirebaseToken = async (payload: {
+    id_token: string;
+    phone?: string;
+    name?: string;
+    role?: string;
+  }) => {
+    setIsLoading(true);
+    try {
+      const auth = await verifyFirebaseTokenWithBackend({
+        id_token: payload.id_token,
+        phone: payload.phone,
+        name: payload.name,
+        role: payload.role || "CITIZEN",
+      });
+
+      setToken(auth.access_token);
+      setRole(auth.role as UserRole);
+
+      const initialUser: User = {
+        id: auth.user_id,
+        name: auth.name,
+        email: auth.email,
+        phone: payload.phone || "",
+        role: auth.role,
+        points_balance: 50,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+      setUser(initialUser);
+
+      getCurrentUser()
+        .then((profile) => setUser(profile))
+        .catch((e) => console.warn("Background profile fetch:", e));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const refreshProfile = async () => {
     if (!token) return;
     try {
@@ -196,6 +370,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        loginWithGoogle,
+        loginWithOtp,
+        loginWithFirebaseToken,
         logout,
         refreshProfile,
         updatePointsBalance,

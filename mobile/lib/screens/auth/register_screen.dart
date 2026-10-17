@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -18,26 +19,95 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
   final _employeeCodeController = TextEditingController();
   final _serviceAreaController = TextEditingController();
 
   String _selectedRole = 'CITIZEN';
   bool _obscurePassword = true;
+  bool _codeSent = false;
+  bool _isSendingOtp = false;
+  int _secondsRemaining = 60;
+  Timer? _timer;
 
   @override
   void dispose() {
+    _timer?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _otpController.dispose();
     _passwordController.dispose();
     _employeeCodeController.dispose();
     _serviceAreaController.dispose();
     super.dispose();
   }
 
+  void _startTimer() {
+    setState(() => _secondsRemaining = 60);
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() => _secondsRemaining--);
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _handleSendOtp() async {
+    final cleanPhone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+    if (cleanPhone.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid 10-digit mobile number.')),
+      );
+      return;
+    }
+
+    setState(() => _isSendingOtp = true);
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.sendOtp(cleanPhone);
+    setState(() => _isSendingOtp = false);
+
+    if (ok) {
+      setState(() => _codeSent = true);
+      _startTimer();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('WhatsApp OTP sent to +91 $cleanPhone. Check your WhatsApp messages!'),
+            backgroundColor: AppColors.emeraldDark,
+          ),
+        );
+      }
+    } else {
+      if (mounted && auth.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage!),
+            backgroundColor: AppColors.rejected,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_codeSent) {
+      await _handleSendOtp();
+      return;
+    }
+
+    if (_otpController.text.trim().length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter the 6-digit OTP code received on your phone.')),
+      );
+      return;
+    }
+
     final auth = context.read<AuthProvider>();
 
     final success = await auth.register(
@@ -45,6 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text,
       password: _passwordController.text,
       phone: _phoneController.text,
+      otpCode: _otpController.text.trim(),
       role: _selectedRole,
       employeeCode: _selectedRole == 'COLLECTOR' ? _employeeCodeController.text : null,
       serviceArea: _selectedRole == 'COLLECTOR' ? _serviceAreaController.text : null,
@@ -102,11 +173,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Expanded(
                           child: Text(
                             auth.errorMessage!,
-                            style: const TextStyle(
-                              color: Color(0xFFB91C1C),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 13),
                           ),
                         ),
                       ],
@@ -115,10 +182,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 16),
                 ],
 
-                // Role selector
+                // Role Selector
                 const Text(
-                  'Account Role',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                  'Select Your Role',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -190,13 +261,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: '9876543210',
                   prefixIcon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
+                  readOnly: _codeSent,
                   validator: (v) {
                     final clean = (v ?? '').replaceAll(RegExp(r'\D'), '');
                     if (clean.length != 10) return 'Must be exactly 10 digits';
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+
+                if (!_codeSent) ...[
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _isSendingOtp ? null : _handleSendOtp,
+                      icon: _isSendingOtp
+                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.send_rounded, size: 16),
+                      label: Text(_isSendingOtp ? 'Sending OTP...' : 'Send SMS OTP'),
+                    ),
+                  ),
+                ],
+
+                if (_codeSent) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.emeraldLight.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.emeraldPrimary.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline, color: AppColors.emeraldDark, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'OTP sent to +91 ${_phoneController.text}',
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => setState(() => _codeSent = false),
+                              child: const Text('Change', style: TextStyle(fontSize: 12)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        CustomTextField(
+                          controller: _otpController,
+                          label: 'Enter 6-Digit OTP Code',
+                          hint: '123456',
+                          prefixIcon: Icons.shield_outlined,
+                          keyboardType: TextInputType.number,
+                          validator: (v) {
+                            if (_codeSent && (v == null || v.trim().length < 4)) {
+                              return 'Enter the OTP code received';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _secondsRemaining > 0 ? 'Resend in ${_secondsRemaining}s' : 'Didn\'t get OTP?',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                            if (_secondsRemaining == 0)
+                              TextButton(
+                                onPressed: _isSendingOtp ? null : _handleSendOtp,
+                                child: const Text('Resend Code', style: TextStyle(fontSize: 12)),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 if (_selectedRole == 'COLLECTOR') ...[
                   CustomTextField(
@@ -241,8 +389,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 24),
 
                 CustomButton(
-                  text: 'Create Waste2Worth Account',
-                  isLoading: auth.isLoading,
+                  text: !_codeSent ? 'Verify Phone & Continue' : 'Complete Registration',
+                  isLoading: auth.isLoading || _isSendingOtp,
                   onPressed: _handleRegister,
                 ),
                 const SizedBox(height: 16),

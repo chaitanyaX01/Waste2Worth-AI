@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/api_constants.dart';
 import '../../models/waste_report_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/status_pill.dart';
-import '../../widgets/custom_button.dart';
 
 class AdminMobileScreen extends StatefulWidget {
   const AdminMobileScreen({super.key});
@@ -19,7 +17,6 @@ class _AdminMobileScreenState extends State<AdminMobileScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
   List<WasteReportModel> _pendingReports = [];
-  List<Map<String, dynamic>> _collectors = [];
   String? _errorMessage;
 
   @override
@@ -109,9 +106,9 @@ class _AdminMobileScreenState extends State<AdminMobileScreen> {
                       ),
                       child: Row(
                         children: [
-                          CircleAvatar(
+                          const CircleAvatar(
                             backgroundColor: AppColors.emeraldPrimary,
-                            child: const Icon(Icons.admin_panel_settings, color: Colors.white),
+                            child: Icon(Icons.admin_panel_settings, color: Colors.white),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -304,7 +301,7 @@ class _AdminMobileScreenState extends State<AdminMobileScreen> {
                 value,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color),
               ),
-              Icon(icon, size: 20, color: color.withOpacity(0.6)),
+              Icon(icon, size: 20, color: color.withValues(alpha: 0.6)),
             ],
           ),
           const SizedBox(height: 4),

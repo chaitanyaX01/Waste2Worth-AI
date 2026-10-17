@@ -20,7 +20,7 @@ export function getApiBaseUrl(): string {
       return customUrl.trim().replace(/\/+$/, "");
     }
 
-    // 2. Client-accessible environment variable
+    // 2. Client-accessible environment variable (if explicitly configured)
     const publicEnv = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_AI_API_URL;
     if (publicEnv && publicEnv.trim()) {
       const cleanEnv = publicEnv.trim().replace(/\/+$/, "");
@@ -28,21 +28,15 @@ export function getApiBaseUrl(): string {
         !window.location.hostname.includes("localhost") &&
         !window.location.hostname.includes("127.0.0.1");
       const isEnvLocalhost = cleanEnv.includes("localhost") || cleanEnv.includes("127.0.0.1");
-      // Only ignore localhost if we are running on a remote hosted platform like Vercel
-      if (!(isRemoteHost && isEnvLocalhost)) {
+      
+      // If user is accessing from localhost, or publicEnv is an actual remote URL, use it
+      if (!isRemoteHost || !isEnvLocalhost) {
         return cleanEnv;
       }
     }
 
-    // 3. If running on a remote hosted web platform (e.g. Vercel), default directly to live Render backend
-    const isRemoteHost =
-      !window.location.hostname.includes("localhost") &&
-      !window.location.hostname.includes("127.0.0.1");
-    if (isRemoteHost) {
-      return "https://waste2worth-backend-welr.onrender.com";
-    }
-
-    // 4. Fallback to same-origin relative path (Next.js rewrites in local dev)
+    // 3. For custom domain websites, use same-origin relative path ("")
+    // This allows Next.js rewrites or reverse proxies to route /api to the backend without CORS issues
     return "";
   }
 
@@ -51,7 +45,7 @@ export function getApiBaseUrl(): string {
     process.env.BACKEND_INTERNAL_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.NEXT_PUBLIC_AI_API_URL ||
-    "https://waste2worth-backend-welr.onrender.com";
+    "http://127.0.0.1:8000";
   return serverUrl.trim().replace(/\/+$/, "");
 }
 
@@ -259,6 +253,7 @@ export async function registerUser(userData: {
   email: string;
   password: string;
   phone: string;
+  otp_code?: string;
   role?: string;
   employee_code?: string;
   organization?: string;
@@ -270,6 +265,7 @@ export async function registerUser(userData: {
     email: userData.email.trim().toLowerCase(),
     password: userData.password.trim(),
     phone: userData.phone.replace(/\D/g, ""),
+    otp_code: userData.otp_code ? userData.otp_code.trim() : undefined,
   };
   const response = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
     method: "POST",
@@ -280,6 +276,101 @@ export async function registerUser(userData: {
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: "Registration failed" }));
     throw new Error(err.detail || "Registration failed");
+  }
+
+  const data: AuthResponse = await response.json();
+  if (typeof window !== "undefined") {
+    localStorage.setItem("w2w_token", data.access_token);
+    localStorage.setItem("w2w_user", JSON.stringify(data));
+  }
+  return data;
+}
+
+export async function verifyFirebaseTokenWithBackend(payload: {
+  id_token: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  otp_code?: string;
+  session_info?: string;
+  role?: string;
+}): Promise<AuthResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/api/auth/firebase-verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id_token: payload.id_token,
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      otp_code: payload.otp_code,
+      session_info: payload.session_info,
+      role: payload.role || "CITIZEN",
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Firebase verification failed" }));
+    if (err.detail && typeof err.detail === "object" && err.detail.code === "PHONE_VERIFICATION_REQUIRED") {
+      const error: any = new Error(err.detail.message || "Mobile phone verification is compulsory.");
+      error.code = "PHONE_VERIFICATION_REQUIRED";
+      error.email = err.detail.email;
+      error.name = err.detail.name;
+      throw error;
+    }
+    const msg = typeof err.detail === "string" ? err.detail : (err.detail?.message || "Firebase authentication failed");
+    throw new Error(msg);
+  }
+
+  const data: AuthResponse = await response.json();
+  if (typeof window !== "undefined") {
+    localStorage.setItem("w2w_token", data.access_token);
+    localStorage.setItem("w2w_user", JSON.stringify(data));
+  }
+  return data;
+}
+
+export async function sendWhatsAppOtp(phone: string): Promise<{
+  success: boolean;
+  message: string;
+  phone: string;
+  is_trial_fallback?: boolean;
+  fallback_code?: string;
+}> {
+  const response = await fetch(`${getApiBaseUrl()}/api/auth/otp/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Failed to send OTP code" }));
+    throw new Error(err.detail || "Failed to send WhatsApp verification code");
+  }
+
+  return response.json();
+}
+
+export async function verifyWhatsAppOtp(payload: {
+  phone: string;
+  code: string;
+  name?: string;
+  role?: string;
+}): Promise<AuthResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/api/auth/otp/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      phone: payload.phone,
+      code: payload.code,
+      name: payload.name,
+      role: payload.role || "CITIZEN",
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "OTP verification failed" }));
+    throw new Error(err.detail || "Invalid verification code");
   }
 
   const data: AuthResponse = await response.json();
@@ -556,7 +647,10 @@ export function resolveImageUrl(path?: string | null): string {
   if (typeof window !== "undefined") {
     return cleanPath;
   }
-  const backendUrl = process.env.BACKEND_INTERNAL_URL || "https://waste2worth-backend-welr.onrender.com";
+  const backendUrl =
+    process.env.BACKEND_INTERNAL_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://127.0.0.1:8000";
   return `${backendUrl}${cleanPath}`;
 }
 

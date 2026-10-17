@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { getCollectorTasks, updateTaskStatus, resolveImageUrl, DEFAULT_WASTE_PLACEHOLDER } from "@/lib/api";
 import { CollectionTask } from "@/lib/types";
-import { MapPin, Navigation, ArrowRight, Check, ChevronRight } from "lucide-react";
+import { MapPin, Navigation, ArrowRight, Check, ChevronRight, Phone, MessageCircle } from "lucide-react";
 
 export default function CollectorDashboardPage() {
   const router = useRouter();
@@ -127,6 +127,43 @@ export default function CollectorDashboardPage() {
                   {activeTask.report.description}
                 </p>
               )}
+
+              {/* Citizen Contact Badge / Actions */}
+              <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#86868b] flex items-center gap-1.5 font-medium">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    Citizen Contact
+                  </span>
+                  <span className="font-mono text-white font-medium text-xs">
+                    {activeTask.report.citizen_phone ? `+91 ${activeTask.report.citizen_phone}` : "Not provided"}
+                  </span>
+                </div>
+                {activeTask.report.citizen_phone && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <a
+                      href={`tel:+91${activeTask.report.citizen_phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      Call Citizen
+                    </a>
+                    <a
+                      href={`https://wa.me/91${activeTask.report.citizen_phone}?text=${encodeURIComponent(
+                        `Hello! I am your Waste2Worth sanitation collector arriving for cleanup task ${activeTask.report.report_code}.`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      WhatsApp
+                    </a>
+                  </div>
+                )}
+              </div>
 
               {/* Primary Action Button */}
               <button

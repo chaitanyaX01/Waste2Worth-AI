@@ -324,6 +324,76 @@ body {
   scrollbar-width: none;
 }
 
+/* ------------------------------------------------------------- */
+/* RADAR BLINK & AMBIENT AESTHETIC ANIMATIONS                    */
+/* ------------------------------------------------------------- */
+@keyframes radarBlink {
+  0% {
+    transform: scale(0.95);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes radarWave {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+@keyframes auroraMesh {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(30px, -20px) scale(1.15);
+    opacity: 0.55;
+  }
+}
+
+@keyframes borderGlowPulse {
+  0%, 100% {
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    border-color: rgba(16, 185, 129, 0.7);
+    box-shadow: 0 0 30px 2px rgba(16, 185, 129, 0.4);
+  }
+}
+
+.animate-radar-blink {
+  animation: radarBlink 1.4s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.animate-radar-wave {
+  animation: radarWave 1.6s infinite cubic-bezier(0, 0, 0.2, 1);
+}
+
+.animate-aurora-mesh {
+  animation: auroraMesh 10s ease-in-out infinite;
+}
+
+.animate-border-glow {
+  animation: borderGlowPulse 3s ease-in-out infinite;
+}
+
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   * {

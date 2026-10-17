@@ -140,7 +140,7 @@ class _WasteScannerScreenState extends State<WasteScannerScreen> {
                       Container(
                         width: double.infinity,
                         height: 240,
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         child: const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -290,7 +290,7 @@ class _WasteScannerScreenState extends State<WasteScannerScreen> {
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
-                        value: _correctedCategory,
+                        initialValue: _correctedCategory,
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         ),

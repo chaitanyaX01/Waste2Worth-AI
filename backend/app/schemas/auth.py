@@ -9,6 +9,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6)
     phone: str = Field(..., min_length=10, max_length=15, description="Compulsory 10-digit mobile number")
+    otp_code: Optional[str] = Field(None, description="6-digit verification code sent via SMS/WhatsApp")
     role: UserRoleEnum = UserRoleEnum.CITIZEN
     # Collector specific fields
     employee_code: Optional[str] = None
@@ -51,4 +52,13 @@ class FirebaseVerifyRequest(BaseModel):
     phone: Optional[str] = None
     otp_code: Optional[str] = None
     session_info: Optional[str] = None
+    role: UserRoleEnum = UserRoleEnum.CITIZEN
+
+class OtpSendRequest(BaseModel):
+    phone: str = Field(..., min_length=10, max_length=15, description="Mobile number for WhatsApp OTP")
+
+class OtpVerifyRequest(BaseModel):
+    phone: str = Field(..., min_length=10, max_length=15)
+    code: str = Field(..., min_length=4, max_length=8)
+    name: Optional[str] = None
     role: UserRoleEnum = UserRoleEnum.CITIZEN

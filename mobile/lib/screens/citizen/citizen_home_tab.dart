@@ -4,7 +4,6 @@ import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reports_provider.dart';
 import '../../providers/rewards_provider.dart';
-import '../../widgets/eco_points_badge.dart';
 import '../../widgets/status_pill.dart';
 import 'waste_scanner_screen.dart';
 import 'report_waste_screen.dart';
@@ -66,7 +65,7 @@ class _CitizenHomeTabState extends State<CitizenHomeTab> {
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor: AppColors.emeraldPrimary.withOpacity(0.15),
+                          backgroundColor: AppColors.emeraldPrimary.withValues(alpha: 0.15),
                           child: Text(
                             (user?.name.isNotEmpty == true) ? user!.name[0].toUpperCase() : 'C',
                             style: const TextStyle(
@@ -127,7 +126,7 @@ class _CitizenHomeTabState extends State<CitizenHomeTab> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF047857).withOpacity(0.25),
+                        color: const Color(0xFF047857).withValues(alpha: 0.25),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
@@ -157,7 +156,7 @@ class _CitizenHomeTabState extends State<CitizenHomeTab> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Text(
@@ -495,7 +494,7 @@ class _CitizenHomeTabState extends State<CitizenHomeTab> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 22),

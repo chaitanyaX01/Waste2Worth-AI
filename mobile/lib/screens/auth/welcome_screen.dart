@@ -30,7 +30,7 @@ class WelcomeScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.emeraldPrimary.withOpacity(0.25),
+                      color: AppColors.emeraldPrimary.withValues(alpha: 0.25),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -88,11 +88,11 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              Row(
+              const Row(
                 children: [
-                  const Expanded(child: Divider(color: AppColors.cardBorder)),
+                  Expanded(child: Divider(color: AppColors.cardBorder)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'OR CONTINUE WITH',
                       style: TextStyle(
@@ -103,7 +103,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Expanded(child: Divider(color: AppColors.cardBorder)),
+                  Expanded(child: Divider(color: AppColors.cardBorder)),
                 ],
               ),
               const SizedBox(height: 20),

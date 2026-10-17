@@ -26,13 +26,13 @@ class WasteCategoryCard extends StatelessWidget {
           // Header with category icon, name, and confidence pill
           Container(
             padding: const EdgeInsets.all(16),
-            color: info.color.withOpacity(0.08),
+            color: info.color.withValues(alpha: 0.08),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: info.color.withOpacity(0.18),
+                    color: info.color.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

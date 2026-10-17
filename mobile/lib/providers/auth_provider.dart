@@ -55,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     required String phone,
+    String? otpCode,
     String role = 'CITIZEN',
     String? employeeCode,
     String? serviceArea,
@@ -69,6 +70,7 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
         phone: phone,
+        otpCode: otpCode,
         role: role,
         employeeCode: employeeCode,
         serviceArea: serviceArea,
@@ -106,6 +108,52 @@ class AuthProvider extends ChangeNotifier {
         otpCode: otpCode,
         sessionInfo: sessionInfo,
         preferredRole: role,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> sendOtp(String phone) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authService.sendOtp(phone);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtp({
+    required String phone,
+    required String code,
+    String? name,
+    String role = 'CITIZEN',
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authService.verifyOtp(
+        phone: phone,
+        code: code,
+        name: name,
+        role: role,
       );
       _isLoading = false;
       notifyListeners();

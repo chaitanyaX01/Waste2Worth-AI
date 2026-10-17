@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConstants {
@@ -34,6 +32,8 @@ class ApiConstants {
   static String get registerUrl => '$baseUrl/api/auth/register';
   static String get meUrl => '$baseUrl/api/auth/me';
   static String get firebaseVerifyUrl => '$baseUrl/api/auth/firebase-verify';
+  static String get sendOtpUrl => '$baseUrl/api/auth/otp/send';
+  static String get verifyOtpUrl => '$baseUrl/api/auth/otp/verify';
 
   // Verified Firebase Console Phone Auth Token
   static const String firebasePhoneVerificationToken =

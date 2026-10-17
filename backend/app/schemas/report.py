@@ -52,6 +52,7 @@ class ReportResponse(BaseModel):
     report_code: str
     citizen_id: uuid.UUID
     citizen_name: str
+    citizen_phone: Optional[str] = None
     image_url: str
     description: Optional[str] = None
     status: ReportStatusEnum

@@ -60,7 +60,7 @@ class _EcopointsWalletTabState extends State<EcopointsWalletTab> {
                   border: Border.all(color: const Color(0xFFFCD34D), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.18),
+                      color: Colors.amber.withValues(alpha: 0.18),
                       blurRadius: 14,
                       offset: const Offset(0, 6),
                     )
@@ -210,7 +210,7 @@ class _EcopointsWalletTabState extends State<EcopointsWalletTab> {
                         color: badge.earned ? Colors.white : const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: badge.earned ? AppColors.emeraldPrimary.withOpacity(0.4) : AppColors.cardBorder,
+                          color: badge.earned ? AppColors.emeraldPrimary.withValues(alpha: 0.4) : AppColors.cardBorder,
                           width: badge.earned ? 1.5 : 1,
                         ),
                       ),

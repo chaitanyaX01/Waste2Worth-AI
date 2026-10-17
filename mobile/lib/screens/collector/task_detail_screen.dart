@@ -22,7 +22,7 @@ class TaskDetailScreen extends StatefulWidget {
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _evidenceImage;
-  String _evidenceType = 'AFTER';
+  final String _evidenceType = 'AFTER';
   final _notesController = TextEditingController();
   bool _isActionLoading = false;
 

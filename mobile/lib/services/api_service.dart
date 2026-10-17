@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/api_constants.dart';
-import '../models/user_model.dart';
 import '../models/prediction_model.dart';
 import '../models/waste_report_model.dart';
 import '../models/reward_model.dart';
