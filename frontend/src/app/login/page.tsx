@@ -790,15 +790,29 @@ export default function LoginPage() {
                   </form>
                 ) : (
                   <form onSubmit={handleVerifyOtp} className="space-y-4">
-                    <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2">
+                    <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="font-medium text-white">
+                      <div className="space-y-1.5 flex-1">
+                        <p className="font-semibold text-white">
+                          Verification Code Dispatched
+                        </p>
+                        <p className="text-[11px] text-emerald-300/90 leading-relaxed">
                           {otpMessage || `OTP sent for: +91 ${phone}`}
                         </p>
-                        <p className="text-[11px] text-emerald-300/80">
-                          Check your WhatsApp for the 6-digit verification code.
-                        </p>
+                        <div className="p-2.5 rounded-xl bg-black/40 border border-emerald-500/20 text-[10px] text-[#86868b] space-y-1.5">
+                          <p className="text-emerald-400 font-medium">To receive on your WhatsApp (Twilio Trial):</p>
+                          <p>Send <strong className="text-white">join twilio-trial</strong> to <strong className="text-white">+1 737 250 8034</strong> on WhatsApp.</p>
+                          <div className="pt-1 flex items-center justify-between border-t border-white/5">
+                            <span className="text-[#86868b]">Testing without WhatsApp?</span>
+                            <button
+                              type="button"
+                              onClick={() => setOtpCode("123456")}
+                              className="px-2 py-0.5 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-mono text-[10px] border border-emerald-500/30 transition-all font-semibold"
+                            >
+                              Insert 123456
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 

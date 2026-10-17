@@ -36,9 +36,9 @@ class Settings(BaseSettings):
     # Twilio WhatsApp & SMS OTP Configuration
     TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
     TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
-    TWILIO_WHATSAPP_NUMBER: str = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
+    TWILIO_WHATSAPP_NUMBER: str = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+17372508034")
     TWILIO_SANDBOX_KEYWORD: str = os.getenv("TWILIO_SANDBOX_KEYWORD", "join twilio-trial")
-    TWILIO_SANDBOX_NUMBER_DISPLAY: str = os.getenv("TWILIO_SANDBOX_NUMBER_DISPLAY", "+1 415 523 8886")
+    TWILIO_SANDBOX_NUMBER_DISPLAY: str = os.getenv("TWILIO_SANDBOX_NUMBER_DISPLAY", "+1 737 250 8034")
     TWILIO_VERIFY_SERVICE_SID: str = os.getenv("TWILIO_VERIFY_SERVICE_SID", "VA17bcb7880ff7f99ade25940e8096a97e")
 
     model_config = SettingsConfigDict(
